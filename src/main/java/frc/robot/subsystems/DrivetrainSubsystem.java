@@ -4,7 +4,10 @@
 
 package frc.robot.subsystems;
 
-import static frc.robot.Constants.AutoConstants.THETA_CONSTRAINTS;
+import static frc.robot.Constants.AutoDriveConstants.THETA_CONSTRAINTS;
+import static frc.robot.Constants.AutoDriveConstants.TRANSLATION_kD;
+import static frc.robot.Constants.AutoDriveConstants.TRANSLATION_kI;
+import static frc.robot.Constants.AutoDriveConstants.TRANSLATION_kP;
 import static frc.robot.Constants.DrivetrainConstants.BACK_LEFT_MODULE_DRIVE_MOTOR;
 import static frc.robot.Constants.DrivetrainConstants.BACK_LEFT_MODULE_STEER_ENCODER;
 import static frc.robot.Constants.DrivetrainConstants.BACK_LEFT_MODULE_STEER_MOTOR;
@@ -52,7 +55,7 @@ import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
-import frc.robot.Constants.AutoConstants;
+import frc.robot.Constants.AutoDriveConstants;
 import frc.robot.Constants.DrivetrainConstants;
 import frc.robot.swerve.ModuleConfiguration;
 import frc.robot.swerve.SwerveModule;
@@ -308,7 +311,7 @@ public class DrivetrainSubsystem extends SubsystemBase {
    */
   public Command createCommandForTrajectory(Trajectory trajectory, Supplier<Pose2d> poseSupplier) {
     var thetaController = new ProfiledPIDController(
-        AutoConstants.THETA_kP, AutoConstants.THETA_kI, AutoConstants.THETA_kD, THETA_CONSTRAINTS);
+        AutoDriveConstants.THETA_kP, AutoDriveConstants.THETA_kI, AutoDriveConstants.THETA_kD, THETA_CONSTRAINTS);
     thetaController.enableContinuousInput(-Math.PI, Math.PI);
 
     SwerveControllerCommand swerveControllerCommand =
@@ -316,8 +319,8 @@ public class DrivetrainSubsystem extends SubsystemBase {
             trajectory,
             poseSupplier,
             DrivetrainConstants.KINEMATICS,
-            new PIDController(AutoConstants.X_kP, AutoConstants.X_kI, AutoConstants.X_kD),
-            new PIDController(AutoConstants.Y_kP, AutoConstants.Y_kI, AutoConstants.Y_kD),
+            new PIDController(TRANSLATION_kP, TRANSLATION_kI, TRANSLATION_kD),
+            new PIDController(TRANSLATION_kP, TRANSLATION_kI, TRANSLATION_kD),
             thetaController,
             this::setModuleStates,
             this);
@@ -328,15 +331,15 @@ public class DrivetrainSubsystem extends SubsystemBase {
   public Command createCommandForTrajectory(
         PathPlannerTrajectory trajectory, Supplier<Pose2d> poseSupplier, boolean useAllianceColor) {
           
-    var thetaController = new PIDController(AutoConstants.THETA_kP, AutoConstants.THETA_kI, AutoConstants.THETA_kD);
+    var thetaController = new PIDController(AutoDriveConstants.THETA_kP, AutoDriveConstants.THETA_kI, AutoDriveConstants.THETA_kD);
     thetaController.enableContinuousInput(-Math.PI, Math.PI);
     
     var ppSwerveCommand = new PPSwerveControllerCommand(
       trajectory, 
       poseSupplier,
       DrivetrainConstants.KINEMATICS,
-      new PIDController(AutoConstants.X_kP, AutoConstants.X_kI, AutoConstants.X_kD),
-      new PIDController(AutoConstants.Y_kP, AutoConstants.Y_kI, AutoConstants.Y_kD),
+      new PIDController(TRANSLATION_kP, TRANSLATION_kI, TRANSLATION_kD),
+      new PIDController(TRANSLATION_kP, TRANSLATION_kI, TRANSLATION_kD),
       thetaController,
       this::setModuleStates,
       useAllianceColor,

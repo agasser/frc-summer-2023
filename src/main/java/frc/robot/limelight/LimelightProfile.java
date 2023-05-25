@@ -1,7 +1,6 @@
 package frc.robot.limelight;
 
-import static frc.robot.Constants.VisionConstants.HIGH_LIMELIGHT_TO_ROBOT;
-import static frc.robot.Constants.VisionConstants.LOW_LIMELIGHT_TO_ROBOT;
+import static frc.robot.Constants.VisionConstants.LIMELIGHT_TO_ROBOT;
 
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.util.Units;
@@ -11,20 +10,7 @@ import edu.wpi.first.math.util.Units;
  */
 public enum LimelightProfile {
 
-  /** Score a cone on a top node */
-  SCORE_CONE_TOP(0, Units.inchesToMeters(44.0), LOW_LIMELIGHT_TO_ROBOT, false),
-
-  /** Score a cone on a middle node */
-  SCORE_CONE_MIDDLE(1, Units.inchesToMeters(24.125), HIGH_LIMELIGHT_TO_ROBOT, true),
-
-  /** Score a cone in a low node */
-  SCORE_CONE_LOW(1, Units.inchesToMeters(24.125), HIGH_LIMELIGHT_TO_ROBOT, true),
-
-  /** Cone pickup on the floor */
-  PICKUP_CONE_FLOOR(0, 0.165, HIGH_LIMELIGHT_TO_ROBOT, true),
-
-  /** Cube pickup on the floor */
-  PICKUP_CUBE_FLOOR(2, 0.0, HIGH_LIMELIGHT_TO_ROBOT, true);
+  SCORE_CONE_TOP(0, Units.inchesToMeters(44.0), LIMELIGHT_TO_ROBOT);
 
   /** ID for the Limelight profile */
   public final int pipelineId;
@@ -35,21 +21,16 @@ public enum LimelightProfile {
   /** Camera to robot transform for the targeting camera */
   public final Transform3d cameraToRobot;
 
-  /** Indicates if this camera moves up and down with the elevator */
-  public final boolean cameraOnElevator;
-
   /**
    * Create a limelight profile
    * @param targetHeight target height
    * @param cameraToRobot transform from the camera to the robot center
-   * @param cameraOnElevator indicates if the camera is on the elevator
    */
   private LimelightProfile(
-      int pipelineId, double targetHeight, Transform3d cameraToRobot, boolean cameraOnElevator) {
+      int pipelineId, double targetHeight, Transform3d cameraToRobot) {
     this.pipelineId = pipelineId;
     this.targetHeight = targetHeight;
     this.cameraToRobot = cameraToRobot;
-    this.cameraOnElevator = cameraOnElevator;
   }
 
 }

@@ -1,14 +1,11 @@
 package frc.robot.commands.autonomous;
 
-import static frc.robot.Constants.AutoConstants.THETA_kD;
-import static frc.robot.Constants.AutoConstants.THETA_kI;
-import static frc.robot.Constants.AutoConstants.THETA_kP;
-import static frc.robot.Constants.AutoConstants.X_kD;
-import static frc.robot.Constants.AutoConstants.X_kI;
-import static frc.robot.Constants.AutoConstants.X_kP;
-import static frc.robot.Constants.AutoConstants.Y_kD;
-import static frc.robot.Constants.AutoConstants.Y_kI;
-import static frc.robot.Constants.AutoConstants.Y_kP;
+import static frc.robot.Constants.AutoDriveConstants.THETA_kD;
+import static frc.robot.Constants.AutoDriveConstants.THETA_kI;
+import static frc.robot.Constants.AutoDriveConstants.THETA_kP;
+import static frc.robot.Constants.AutoDriveConstants.TRANSLATION_kD;
+import static frc.robot.Constants.AutoDriveConstants.TRANSLATION_kI;
+import static frc.robot.Constants.AutoDriveConstants.TRANSLATION_kP;
 import static frc.robot.Constants.DrivetrainConstants.MAX_ANGULAR_VELOCITY_RADIANS_PER_SECOND;
 import static frc.robot.Constants.DrivetrainConstants.MAX_VELOCITY_METERS_PER_SECOND;
 import static frc.robot.Constants.VisionConstants.FIELD_WIDTH_METERS;
@@ -71,8 +68,8 @@ public class DriveToPoseCommand extends CommandBase {
     this.goalPose = goalPose;
     this.useAllianceColor = useAllianceColor;
 
-    xController = new ProfiledPIDController(X_kP, X_kI, X_kD, xyConstraints);
-    yController = new ProfiledPIDController(Y_kP, Y_kI, Y_kD, xyConstraints);
+    xController = new ProfiledPIDController(TRANSLATION_kP, TRANSLATION_kI, TRANSLATION_kD, xyConstraints);
+    yController = new ProfiledPIDController(TRANSLATION_kP, TRANSLATION_kI, TRANSLATION_kD, xyConstraints);
     xController.setTolerance(TRANSLATION_TOLERANCE);
     yController.setTolerance(TRANSLATION_TOLERANCE);
     thetaController = new ProfiledPIDController(THETA_kP, THETA_kI, THETA_kD, omegaConstraints);
