@@ -14,7 +14,6 @@ import com.pathplanner.lib.auto.PIDConstants;
 import com.pathplanner.lib.auto.SwerveAutoBuilder;
 
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
@@ -22,12 +21,12 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.Constants.AutoConstants;
 import frc.robot.Constants.DrivetrainConstants;
-import frc.robot.commands.autonomous.DriveToPoseCommand;
 import frc.robot.subsystems.DrivetrainSubsystem;
 
+/**
+ * Class for constructing autonomous routines
+ */
 public class AutonomousBuilder {
-  private final DrivetrainSubsystem drivetrainSubsystem;
-  private final Supplier<Pose2d> poseSupplier;
 
   private final SendableChooser<Command> autoChooser = new SendableChooser<>();
   private final SwerveAutoBuilder swerveAutoBuilder;
@@ -35,9 +34,6 @@ public class AutonomousBuilder {
   public AutonomousBuilder(
       DrivetrainSubsystem drivetrainSubsystem, Supplier<Pose2d> poseSupplier, Consumer<Pose2d> poseConsumer) {
     
-    this.drivetrainSubsystem = drivetrainSubsystem;
-    this.poseSupplier = poseSupplier;
-
     var eventMap = buildEventMap();
     swerveAutoBuilder = new SwerveAutoBuilder(
         poseSupplier::get,
@@ -52,7 +48,7 @@ public class AutonomousBuilder {
     );
 
     autoChooser.setDefaultOption("None", Commands.none());
-    // Add all the paths in the pathplanner directory
+    // Add all the paths in the pathplanner directory that start with "Auto - "
     try (Stream<Path> files = Files.list(Paths.get(Filesystem.getDeployDirectory().getAbsolutePath(), "pathplanner"))) {
       files.filter(file -> !Files.isDirectory(file))
           .map(Path::getFileName)
@@ -95,33 +91,6 @@ public class AutonomousBuilder {
   private HashMap<String, Command> buildEventMap() {
     var eventMap = new HashMap<String, Command>();
     return eventMap;
-  }
-
-  public Command driveToPose(Pose2d pose, TrapezoidProfile.Constraints xyConstraints,
-      TrapezoidProfile.Constraints omegaConstraints, boolean useAllianceColor) {
-    
-    return new DriveToPoseCommand(drivetrainSubsystem, poseSupplier::get, pose, xyConstraints,
-        omegaConstraints, useAllianceColor);
-  }
-
-  /**
-   * Wraps the given command so that it will end if the robot's X coordinate becomes greater than the given value.
-   * @param command command to wrap
-   * @param x x value
-   * @return wrapped command
-   */
-  public Command keepingXBelow(Command command, double x) {
-    return command.until(() -> poseSupplier.get().getX() > x);
-  }
-
-  /**
-   * Wraps the given command so that it will end if the robot's X coordinate becomes less than the given value.
-   * @param command command to wrap
-   * @param x x value
-   * @return wrapped command
-   */
-  public Command keepingXAbove(Command command, double x) {
-    return command.until(() -> poseSupplier.get().getX() < x);
   }
 
 }
