@@ -1,4 +1,4 @@
-package frc.robot.subsystems;
+package frc.robot.commands;
 
 import static frc.robot.Constants.VisionConstants.APRILTAG_AMBIGUITY_THRESHOLD;
 import static frc.robot.Constants.VisionConstants.APRILTAG_CAMERA_TO_ROBOT;
@@ -27,8 +27,8 @@ public class PhotonRunnable implements Runnable {
   private final PhotonCamera photonCamera;
   private final AtomicReference<EstimatedRobotPose> atomicEstimatedRobotPose = new AtomicReference<EstimatedRobotPose>();
 
-  public PhotonRunnable() {
-    this.photonCamera = new PhotonCamera("OV9281");;
+  public PhotonRunnable(String cameraName) {
+    this.photonCamera = new PhotonCamera(cameraName);;
     PhotonPoseEstimator photonPoseEstimator = null;
     try {
       var layout = AprilTagFields.k2023ChargedUp.loadAprilTagLayoutField();

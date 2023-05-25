@@ -5,6 +5,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import com.pathplanner.lib.PathPlanner;
@@ -22,23 +24,24 @@ import frc.robot.Constants.AutoConstants;
 import frc.robot.Constants.DrivetrainConstants;
 import frc.robot.commands.autonomous.DriveToPoseCommand;
 import frc.robot.subsystems.DrivetrainSubsystem;
-import frc.robot.subsystems.PoseEstimatorSubsystem;
 
 public class AutonomousBuilder {
   private final DrivetrainSubsystem drivetrainSubsystem;
-  private final PoseEstimatorSubsystem poseEstimator;
+  private final Supplier<Pose2d> poseSupplier;
 
   private final SendableChooser<Command> autoChooser = new SendableChooser<>();
   private final SwerveAutoBuilder swerveAutoBuilder;
 
-  public AutonomousBuilder(DrivetrainSubsystem drivetrainSubsystem, PoseEstimatorSubsystem poseEstimator) {
+  public AutonomousBuilder(
+      DrivetrainSubsystem drivetrainSubsystem, Supplier<Pose2d> poseSupplier, Consumer<Pose2d> poseConsumer) {
+    
     this.drivetrainSubsystem = drivetrainSubsystem;
-    this.poseEstimator = poseEstimator;
+    this.poseSupplier = poseSupplier;
 
     var eventMap = buildEventMap();
     swerveAutoBuilder = new SwerveAutoBuilder(
-        poseEstimator::getCurrentPose,
-        poseEstimator::setCurrentPose,
+        poseSupplier::get,
+        poseConsumer::accept,
         DrivetrainConstants.KINEMATICS,
         new PIDConstants(AutoConstants.X_kP, AutoConstants.X_kI, AutoConstants.X_kD),
         new PIDConstants(AutoConstants.PATH_THETA_kP, AutoConstants.PATH_THETA_kI, AutoConstants.PATH_THETA_kD),
@@ -97,7 +100,7 @@ public class AutonomousBuilder {
   public Command driveToPose(Pose2d pose, TrapezoidProfile.Constraints xyConstraints,
       TrapezoidProfile.Constraints omegaConstraints, boolean useAllianceColor) {
     
-    return new DriveToPoseCommand(drivetrainSubsystem, poseEstimator::getCurrentPose, pose, xyConstraints,
+    return new DriveToPoseCommand(drivetrainSubsystem, poseSupplier::get, pose, xyConstraints,
         omegaConstraints, useAllianceColor);
   }
 
@@ -108,7 +111,7 @@ public class AutonomousBuilder {
    * @return wrapped command
    */
   public Command keepingXBelow(Command command, double x) {
-    return command.until(() -> poseEstimator.getCurrentPose().getX() > x);
+    return command.until(() -> poseSupplier.get().getX() > x);
   }
 
   /**
@@ -118,7 +121,7 @@ public class AutonomousBuilder {
    * @return wrapped command
    */
   public Command keepingXAbove(Command command, double x) {
-    return command.until(() -> poseEstimator.getCurrentPose().getX() < x);
+    return command.until(() -> poseSupplier.get().getX() < x);
   }
 
 }

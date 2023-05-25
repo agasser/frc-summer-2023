@@ -14,11 +14,11 @@ import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Command.InterruptionBehavior;
 import frc.robot.commands.FieldOrientedDriveCommand;
+import frc.robot.commands.PoseEstimatorCommand;
 import frc.robot.controls.ControlBindings;
 import frc.robot.controls.JoystickControlBindings;
 import frc.robot.controls.XBoxControlBindings;
 import frc.robot.subsystems.DrivetrainSubsystem;
-import frc.robot.subsystems.PoseEstimatorSubsystem;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -31,14 +31,15 @@ public class RobotContainer {
   private final ControlBindings controlBindings;
 
   private final DrivetrainSubsystem drivetrainSubsystem = new DrivetrainSubsystem();
-  private final PoseEstimatorSubsystem poseEstimator =
-      new PoseEstimatorSubsystem(drivetrainSubsystem::getGyroscopeRotation, drivetrainSubsystem::getModulePositions);
+  private final PoseEstimatorCommand poseEstimator =
+      new PoseEstimatorCommand(drivetrainSubsystem::getGyroscopeRotation, drivetrainSubsystem::getModulePositions);
   
   private final FieldOrientedDriveCommand fieldOrientedDriveCommand;
 
   private final Timer reseedTimer = new Timer();
 
-  private final AutonomousBuilder autoBuilder = new AutonomousBuilder(drivetrainSubsystem, poseEstimator);
+  private final AutonomousBuilder autoBuilder =
+      new AutonomousBuilder(drivetrainSubsystem, poseEstimator::getCurrentPose, poseEstimator::setCurrentPose);
   
   /**
    * The container for the robot. Contains subsystems, OI devices, and commands.
@@ -50,6 +51,9 @@ public class RobotContainer {
     } else {
       controlBindings = new JoystickControlBindings();
     }
+
+    // Schedule the pose estimator (repeatedly in case it unexpectedly stops)
+    poseEstimator.repeatedly().schedule();
 
     fieldOrientedDriveCommand = new FieldOrientedDriveCommand(
         drivetrainSubsystem,

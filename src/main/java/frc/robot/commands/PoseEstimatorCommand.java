@@ -1,7 +1,8 @@
-package frc.robot.subsystems;
+package frc.robot.commands;
 
 import static edu.wpi.first.apriltag.AprilTagFieldLayout.OriginPosition.kBlueAllianceWallRightSide;
 import static edu.wpi.first.apriltag.AprilTagFieldLayout.OriginPosition.kRedAllianceWallRightSide;
+import static frc.robot.Constants.VisionConstants.APRILTAG_CAMERA_NAME;
 
 import java.util.function.Supplier;
 
@@ -17,14 +18,14 @@ import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.CommandBase;
 import frc.robot.Constants.DrivetrainConstants;
 import frc.robot.Constants.VisionConstants;
 
 /**
  * Pose estimator that uses odometry and AprilTags with PhotonVision.
  */
-public class PoseEstimatorSubsystem extends SubsystemBase {
+public class PoseEstimatorCommand extends CommandBase {
 
   // Kalman Filter Configuration. These can be "tuned-to-taste" based on how much
   // you trust your various sensors. Smaller numbers will cause the filter to
@@ -48,13 +49,13 @@ public class PoseEstimatorSubsystem extends SubsystemBase {
   private final Supplier<SwerveModulePosition[]> modulePositionSupplier;
   private final SwerveDrivePoseEstimator poseEstimator;
   private final Field2d field2d = new Field2d();
-  private final PhotonRunnable photonEstimator = new PhotonRunnable();
+  private final PhotonRunnable photonEstimator = new PhotonRunnable(APRILTAG_CAMERA_NAME);
   private final Notifier photonNotifier = new Notifier(photonEstimator);
 
   private OriginPosition originPosition = kBlueAllianceWallRightSide;
   private boolean sawTag = false;
 
-  public PoseEstimatorSubsystem(
+  public PoseEstimatorCommand(
       Supplier<Rotation2d> rotationSupplier, Supplier<SwerveModulePosition[]> modulePositionSupplier) {
     
     this.rotationSupplier = rotationSupplier;
@@ -70,7 +71,6 @@ public class PoseEstimatorSubsystem extends SubsystemBase {
     
     // Start PhotonVision thread
     photonNotifier.setName("PhotonRunnable");
-    photonNotifier.startPeriodic(0.02);
   }
 
   public void addDashboardWidgets(ShuffleboardTab tab) {
@@ -107,7 +107,12 @@ public class PoseEstimatorSubsystem extends SubsystemBase {
   }
 
   @Override
-  public void periodic() {
+  public void initialize() {
+    photonNotifier.startPeriodic(0.02);
+  }
+
+  @Override
+  public void execute() {
     // Update pose estimator with drivetrain sensors
     poseEstimator.update(rotationSupplier.get(), modulePositionSupplier.get());
 
@@ -129,6 +134,16 @@ public class PoseEstimatorSubsystem extends SubsystemBase {
       dashboardPose = flipAlliance(dashboardPose);
     }
     field2d.setRobotPose(dashboardPose);
+  }
+
+  @Override
+  public boolean runsWhenDisabled() {
+    return true;
+  }
+
+  @Override
+  public void end(boolean interrupted) {
+    photonNotifier.close();
   }
 
   private String getFomattedPose() {
