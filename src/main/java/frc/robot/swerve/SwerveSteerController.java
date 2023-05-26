@@ -20,7 +20,6 @@ import com.ctre.phoenix.sensors.CANCoderStatusFrame;
 import com.ctre.phoenix.sensors.SensorInitializationStrategy;
 
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardContainer;
 
 public class SwerveSteerController {
@@ -39,7 +38,6 @@ public class SwerveSteerController {
   private final double motionMagicAccelerationConstant = .0625;
 
   private double desiredAngleRadians = 0.0;
-  private Timer reseedTimer = new Timer();
 
   public SwerveSteerController(
       int motorPort,
@@ -100,8 +98,6 @@ public class SwerveSteerController {
         "Failed to configure Falcon status frame period");
     
     addDashboardEntries(container);
-    reseedTimer.start();
-
   }
 
   private void addDashboardEntries(ShuffleboardContainer container) {
