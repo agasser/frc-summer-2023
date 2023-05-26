@@ -74,6 +74,10 @@ public class RobotContainer {
   }
 
   private void configureDashboard() {
+    /**** Driver tab ****/
+    var driverTab = Shuffleboard.getTab("Driver");
+    autoBuilder.addDashboardWidgets(driverTab);
+    
     /**** Vision tab ****/
     final var visionTab = Shuffleboard.getTab("Vision");
 
