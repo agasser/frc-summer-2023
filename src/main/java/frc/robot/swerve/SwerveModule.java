@@ -2,11 +2,9 @@ package frc.robot.swerve;
 
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 
-public class SwerveModule {
+public class SwerveModule implements SwerveModuleIO {
   private final SwerveSpeedController driveController;
   private final SwerveSteerController steerController;
 
@@ -15,35 +13,17 @@ public class SwerveModule {
     this.steerController = steerController;
   }
 
-  /**
-   * Returns the drive velocity in meters per second
-   * @return drive velocity in meters per second
-   */
-  public double getDriveVelocity() {
-    return driveController.getStateVelocity();
-  }
-
-  public Rotation2d getSteerAngle() {
-    return steerController.getStateRotation();
-  }
-
+  @Override
   public void setDesiredState(SwerveModuleState moduleState) {
     driveController.setReferenceVelocity(moduleState.speedMetersPerSecond);
     steerController.setDesiredRotation(moduleState.angle);
-  }
-
-  public SwerveModuleState getState() {
-    return new SwerveModuleState(getDriveVelocity(), getSteerAngle());
-  }
-
-  public SwerveModulePosition getPosition() {
-    return new SwerveModulePosition(driveController.getStatePosition(), getSteerAngle());
   }
 
   /**
    * Sets the neutral mode for the drive and steer motors
    * @param neutralMode neutral mode
    */
+  @Override
   public void setNeutralMode(NeutralMode neutralMode) {
     steerController.setNeutralMode(neutralMode);
     driveController.setNeutralMode(neutralMode);
@@ -52,8 +32,18 @@ public class SwerveModule {
   /**
    * Reseeds to Talon FX motor offset from the CANCoder. Workaround for "dead wheel"
    */
+  @Override
   public void reseedSteerMotorOffset() {
     steerController.configMotorOffset(false);
+  }
+
+  @Override
+  public void updateInputs(SwerveModuleIOInputs inputs) {
+    inputs.drivePositionMeters = driveController.getStatePosition();
+    inputs.driveVelocityMetersPerSecond = driveController.getStateVelocity();
+
+    inputs.steerAngleRadians = steerController.getStateRotation();
+    inputs.steerAbsoluteEncoderPosition = steerController.getAbsoluteEncoderPosition();
   }
 
 }

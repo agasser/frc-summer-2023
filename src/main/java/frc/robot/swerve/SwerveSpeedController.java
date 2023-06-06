@@ -13,7 +13,6 @@ import com.ctre.phoenix.motorcontrol.can.TalonFXConfiguration;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
 
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
-import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardContainer;
 
 public class SwerveSpeedController {
 
@@ -29,10 +28,7 @@ public class SwerveSpeedController {
 
   private final SimpleMotorFeedforward feedforward;
 
-  private double referenceVelocity;
-
-  public SwerveSpeedController(int port, ModuleConfiguration moduleConfiguration, ShuffleboardContainer container,
-      double kS, double kV, double kA) {
+  public SwerveSpeedController(int port, ModuleConfiguration moduleConfiguration, double kS, double kV, double kA) {
     
     feedforward = new SimpleMotorFeedforward(kS, kV, kA);
     
@@ -51,6 +47,7 @@ public class SwerveSpeedController {
     motorConfiguration.slot0.kD = DRIVE_kD;
 
     motor = new WPI_TalonFX(port, CANIVORE_BUS_NAME);
+    motor.configFactoryDefault();
     CtreUtils.checkCtreError(motor.configAllSettings(motorConfiguration), "Failed to configure Falcon 500");
     motor.enableVoltageCompensation(true);
     motor.setNeutralMode(NeutralMode.Coast);
@@ -62,20 +59,9 @@ public class SwerveSpeedController {
     CtreUtils.checkCtreError(
         motor.setStatusFramePeriod(StatusFrameEnhanced.Status_1_General, STATUS_FRAME_GENERAL_PERIOD_MS, CAN_TIMEOUT_MS),
         "Failed to configure Falcon status frame period");
-    
-    addDashboardEntries(container);
-  }
-
-  private void addDashboardEntries(ShuffleboardContainer container) {
-    if (container != null) {
-      container.addNumber("Current Velocity", () -> getStateVelocity()).withPosition(0, 0);
-      container.addNumber("Target Velocity", () -> referenceVelocity).withPosition(0, 1);
-      container.addNumber("Current Position", () -> getStatePosition()).withPosition(0, 2);
-    }
   }
 
   public void setReferenceVelocity(double velocity) {
-    this.referenceVelocity = velocity;
     var arbFeedForward = feedforward.calculate(velocity) / nominalVoltage;
     motor.set(
           TalonFXControlMode.Velocity,

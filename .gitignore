@@ -167,3 +167,6 @@ networktables.json
 
 # Merge conflict diff files
 *.orig
+
+# Git info from build
+src/main/java/frc/robot/BuildConstants.java

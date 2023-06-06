@@ -20,7 +20,6 @@ import com.ctre.phoenix.sensors.CANCoderStatusFrame;
 import com.ctre.phoenix.sensors.SensorInitializationStrategy;
 
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardContainer;
 
 public class SwerveSteerController {
 
@@ -37,18 +36,15 @@ public class SwerveSteerController {
   private final double motionMagicVelocityConstant = .125;
   private final double motionMagicAccelerationConstant = .0625;
 
-  private double desiredAngleRadians = 0.0;
-
   public SwerveSteerController(
       int motorPort,
       int canCoderPort,
       double canCoderOffset,
-      ShuffleboardContainer container, 
       ModuleConfiguration moduleConfiguration) {
 
     var config = new CANCoderConfiguration();
     config.absoluteSensorRange = AbsoluteSensorRange.Unsigned_0_to_360;
-    config.magnetOffsetDegrees = Math.toDegrees(canCoderOffset);
+    config.magnetOffsetDegrees = canCoderOffset;
     config.sensorDirection = false;
     config.initializationStrategy = SensorInitializationStrategy.BootToAbsolutePosition;
 
@@ -96,16 +92,6 @@ public class SwerveSteerController {
     CtreUtils.checkCtreError(
         motor.setStatusFramePeriod(StatusFrameEnhanced.Status_1_General, STATUS_FRAME_GENERAL_PERIOD_MS, CAN_TIMEOUT_MS),
         "Failed to configure Falcon status frame period");
-    
-    addDashboardEntries(container);
-  }
-
-  private void addDashboardEntries(ShuffleboardContainer container) {
-    if (container != null) {
-      container.addNumber("Current Angle", () -> getStateRotation().getDegrees()).withPosition(0, 3);
-      container.addNumber("Target Angle", () -> Math.toDegrees(desiredAngleRadians)).withPosition(0, 4);
-      container.addNumber("Absolute Encoder Angle", () -> encoder.getAbsolutePosition()).withPosition(0, 5);
-    }
   }
 
   /**
@@ -136,6 +122,10 @@ public class SwerveSteerController {
     return angle;
   }
 
+  public double getAbsoluteEncoderPosition() {
+    return encoder.getAbsolutePosition();
+  }
+
   public void setDesiredRotation(Rotation2d desiredRotation) {
     var desiredAngleRadians = desiredRotation.getRadians();
     var currentAngleRadians = motor.getSelectedSensorPosition() * motorEncoderPositionCoefficient;
@@ -153,18 +143,16 @@ public class SwerveSteerController {
       adjustedReferenceAngleRadians += 2.0 * Math.PI;
     }
     motor.set(TalonFXControlMode.MotionMagic, adjustedReferenceAngleRadians / motorEncoderPositionCoefficient);
-
-    this.desiredAngleRadians = desiredAngleRadians;
   }
 
-  public Rotation2d getStateRotation() {
+  public double getStateRotation() {
     var motorAngleRadians = motor.getSelectedSensorPosition() * motorEncoderPositionCoefficient;
     motorAngleRadians %= 2.0 * Math.PI;
     if (motorAngleRadians < 0.0) {
       motorAngleRadians += 2.0 * Math.PI;
     }
 
-    return new Rotation2d(motorAngleRadians);
+    return motorAngleRadians;
   }
 
   /**
@@ -172,7 +160,7 @@ public class SwerveSteerController {
    * @param neutralMode neutral mode
    */
   public void setNeutralMode(NeutralMode neutralMode) {
-    motor.setNeutralMode(neutralMode);
+    motor.setNeutralMode(NeutralMode.Coast);
   }
 
 }
