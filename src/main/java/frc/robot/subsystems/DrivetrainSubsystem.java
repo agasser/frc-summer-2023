@@ -95,7 +95,7 @@ public class DrivetrainSubsystem extends SubsystemBase {
               FRONT_RIGHT_MODULE_STEER_ENCODER,
               FRONT_RIGHT_MODULE_STEER_OFFSET,
               DrivetrainConstants.DRIVE_kS,
-              DrivetrainConstants.DRIVE_kV + 0.075,
+              DrivetrainConstants.DRIVE_kV,
               DrivetrainConstants.DRIVE_kA
           ),
           createSwerveModule(
@@ -115,7 +115,7 @@ public class DrivetrainSubsystem extends SubsystemBase {
               BACK_RIGHT_MODULE_STEER_ENCODER,
               BACK_RIGHT_MODULE_STEER_OFFSET,
               DrivetrainConstants.DRIVE_kS,
-              DrivetrainConstants.DRIVE_kV + 0.075,
+              DrivetrainConstants.DRIVE_kV,
               DrivetrainConstants.DRIVE_kA
           )};
       } else {
