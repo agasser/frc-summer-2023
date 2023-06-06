@@ -52,25 +52,25 @@ public final class Constants {
 
     public static final String CANIVORE_BUS_NAME = "swerve";
 
-    public static final int FRONT_LEFT_MODULE_DRIVE_MOTOR = 3;
-    public static final int FRONT_LEFT_MODULE_STEER_MOTOR = 13;
-    public static final int FRONT_LEFT_MODULE_STEER_ENCODER = 23;
-    public static final double FRONT_LEFT_MODULE_STEER_OFFSET = -toRadians(286.962890625);
+    public static final int FRONT_LEFT_MODULE_DRIVE_MOTOR = 0;
+    public static final int FRONT_LEFT_MODULE_STEER_MOTOR = 10;
+    public static final int FRONT_LEFT_MODULE_STEER_ENCODER = 20;
+    public static final double FRONT_LEFT_MODULE_STEER_OFFSET = -toRadians(290.3027);
 
-    public static final int FRONT_RIGHT_MODULE_DRIVE_MOTOR = 2;
-    public static final int FRONT_RIGHT_MODULE_STEER_MOTOR = 12;
-    public static final int FRONT_RIGHT_MODULE_STEER_ENCODER = 22;
-    public static final double FRONT_RIGHT_MODULE_STEER_OFFSET = -toRadians(41.220703125);
+    public static final int FRONT_RIGHT_MODULE_DRIVE_MOTOR = 1;
+    public static final int FRONT_RIGHT_MODULE_STEER_MOTOR = 11;
+    public static final int FRONT_RIGHT_MODULE_STEER_ENCODER = 21;
+    public static final double FRONT_RIGHT_MODULE_STEER_OFFSET = -toRadians(58.1836);
 
-    public static final int BACK_LEFT_MODULE_DRIVE_MOTOR = 1;
-    public static final int BACK_LEFT_MODULE_STEER_MOTOR = 11;
-    public static final int BACK_LEFT_MODULE_STEER_ENCODER = 21;
-    public static final double BACK_LEFT_MODULE_STEER_OFFSET = -toRadians(68.90625);
+    public static final int BACK_LEFT_MODULE_DRIVE_MOTOR = 2;
+    public static final int BACK_LEFT_MODULE_STEER_MOTOR = 12;
+    public static final int BACK_LEFT_MODULE_STEER_ENCODER = 22;
+    public static final double BACK_LEFT_MODULE_STEER_OFFSET = -toRadians(204.7852);
 
-    public static final int BACK_RIGHT_MODULE_DRIVE_MOTOR = 0;
-    public static final int BACK_RIGHT_MODULE_STEER_MOTOR = 10;
-    public static final int BACK_RIGHT_MODULE_STEER_ENCODER = 20;
-    public static final double BACK_RIGHT_MODULE_STEER_OFFSET = -toRadians(66.4453125);
+    public static final int BACK_RIGHT_MODULE_DRIVE_MOTOR = 3;
+    public static final int BACK_RIGHT_MODULE_STEER_MOTOR = 13;
+    public static final int BACK_RIGHT_MODULE_STEER_ENCODER = 23;
+    public static final double BACK_RIGHT_MODULE_STEER_OFFSET = -toRadians(291.9727);
     
     public static final int PIGEON_ID = 30;
 
