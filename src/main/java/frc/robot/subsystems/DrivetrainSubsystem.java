@@ -33,7 +33,8 @@ import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
 import com.ctre.phoenix.motorcontrol.NeutralMode;
-import com.ctre.phoenix.sensors.WPI_Pigeon2;
+import com.ctre.phoenix6.configs.Pigeon2Configuration;
+import com.ctre.phoenix6.hardware.Pigeon2;
 import com.pathplanner.lib.PathPlannerTrajectory;
 import com.pathplanner.lib.commands.PPSwerveControllerCommand;
 
@@ -64,7 +65,7 @@ import frc.robot.swerve.SwerveSteerController;
 
 public class DrivetrainSubsystem extends SubsystemBase {
 
-  private final WPI_Pigeon2 pigeon = new WPI_Pigeon2(PIGEON_ID, CANIVORE_BUS_NAME);
+  private final Pigeon2 pigeon = new Pigeon2(PIGEON_ID, CANIVORE_BUS_NAME);
   private final SwerveModule[] swerveModules;
 
   private static final NetworkTable moduleStatesTable = NetworkTableInstance.getDefault().getTable("SwerveStates");
@@ -73,9 +74,12 @@ public class DrivetrainSubsystem extends SubsystemBase {
 
   public DrivetrainSubsystem() {
     ShuffleboardTab tab = Shuffleboard.getTab("Drivetrain");
-    pigeon.configMountPoseRoll(0);
-    pigeon.configMountPoseYaw(0);
-    pigeon.configMountPosePitch(0);
+    
+    var pigeonConfig = new Pigeon2Configuration();
+    pigeonConfig.MountPose.MountPoseYaw = 0;
+    pigeonConfig.MountPose.MountPosePitch = 0;
+    pigeonConfig.MountPose.MountPoseRoll = 0;
+    pigeon.getConfigurator().apply(pigeonConfig);
 
     ShuffleboardLayout frontLeftLayout = null;
     ShuffleboardLayout frontRightLayout = null;
@@ -184,16 +188,6 @@ public class DrivetrainSubsystem extends SubsystemBase {
 
   public Rotation2d getGyroscopeRotation() {
     return pigeon.getRotation2d();
-  }
-
-  /**
-   * Gets the raw gyro data.
-   * @return x[0], y[1], and z[2] data in degrees per second
-   */
-  public double[] getGyroVelocityXYZ() {
-    double[] xyz = new double[3];
-    pigeon.getRawGyro(xyz);
-    return xyz;
   }
 
   /**

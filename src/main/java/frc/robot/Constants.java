@@ -82,6 +82,9 @@ public final class Constants {
     public static final double MAX_VELOCITY_METERS_PER_SECOND = 6380.0 / 60.0 *
         ModuleConfiguration.MK4I_L2.getDriveReduction() *
         ModuleConfiguration.MK4I_L2.getWheelDiameter() * PI;
+    
+    public static final double MAX_STEER_ROTATIONS_PER_SECOND = 6380.0 / 60.0 *
+        ModuleConfiguration.MK4I_L2.getSteerReduction();
 
      /**
      * The maximum angular velocity of the robot in radians per second.
@@ -111,9 +114,11 @@ public final class Constants {
     /** Voltage needed to induce a given acceleration in the motor shaft. kA */
     public static final double DRIVE_kA = 0.52878;
 
-    public static final double STEER_kP = 0.2;
-    public static final double STEER_kI = 0.001;
+    // TODO convert these constants
+    public static final double STEER_kP = 4.8046920;
+    public static final double STEER_kI = 24.02346;
     public static final double STEER_kD = 0.0;
+    public static final double STEER_kV = 0.0366525935483871;
 
     public static final double DRIVE_kP = 0.04;
     public static final double DRIVE_kI = 0.0;

@@ -45,7 +45,7 @@ public class SwerveModule {
    * @param neutralMode neutral mode
    */
   public void setNeutralMode(NeutralMode neutralMode) {
-    steerController.setNeutralMode(neutralMode);
+    steerController.setBrakeMode(NeutralMode.Brake == neutralMode);
     driveController.setNeutralMode(neutralMode);
   }
 

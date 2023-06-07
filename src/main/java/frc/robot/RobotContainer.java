@@ -111,9 +111,9 @@ public class RobotContainer {
 
   public void disabledPeriodic() {
     // Reseed the motor offset continuously when the robot is disabled to help solve dead wheel issue
-    if (reseedTimer.advanceIfElapsed(1.0)) {
-      drivetrainSubsystem.reseedSteerMotorOffsets();
-    }
+    // if (reseedTimer.advanceIfElapsed(1.0)) {
+    //   drivetrainSubsystem.reseedSteerMotorOffsets();
+    // }
   }
 
   /**
