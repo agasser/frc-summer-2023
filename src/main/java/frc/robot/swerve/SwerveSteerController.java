@@ -1,5 +1,8 @@
 package frc.robot.swerve;
 
+import static com.ctre.phoenix6.signals.InvertedValue.Clockwise_Positive;
+import static com.ctre.phoenix6.signals.InvertedValue.CounterClockwise_Positive;
+import static edu.wpi.first.math.util.Units.rotationsToRadians;
 import static frc.robot.Constants.DrivetrainConstants.CANIVORE_BUS_NAME;
 import static frc.robot.Constants.DrivetrainConstants.MAX_STEER_ROTATIONS_PER_SECOND;
 import static frc.robot.Constants.DrivetrainConstants.STEER_kD;
@@ -7,7 +10,6 @@ import static frc.robot.Constants.DrivetrainConstants.STEER_kI;
 import static frc.robot.Constants.DrivetrainConstants.STEER_kP;
 import static frc.robot.Constants.DrivetrainConstants.STEER_kV;
 
-import com.ctre.phoenix6.StatusCode;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.Slot0Configs;
@@ -25,11 +27,7 @@ import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardContainer;
 
 public class SwerveSteerController {
 
-  private static final int CAN_TIMEOUT_MS = 250;
-
   private final TalonFX motor;
-  /** Value to multiple by the motor position (in rotations) to get the wheel position */
-  private final double motorEncoderPositionCoefficient;
   private final CANcoder encoder;
   
   private final MotionMagicVoltage motionMagicVoltageRequest = new MotionMagicVoltage(0);
@@ -45,32 +43,27 @@ public class SwerveSteerController {
     // Configure the encoder
     var cancoderConfig = new CANcoderConfiguration();
     var magSensorConfig = cancoderConfig.MagnetSensor;
-    magSensorConfig.AbsoluteSensorRange = AbsoluteSensorRangeValue.Unsigned_0To1;
-    magSensorConfig.MagnetOffset = Units.radiansToRotations(canCoderOffset); // TODO change the constants to be rotations
+    magSensorConfig.AbsoluteSensorRange = AbsoluteSensorRangeValue.Signed_PlusMinusHalf;
+    magSensorConfig.MagnetOffset = Units.radiansToRotations(canCoderOffset);
     magSensorConfig.SensorDirection = SensorDirectionValue.CounterClockwise_Positive;
 
     encoder = new CANcoder(canCoderPort, CANIVORE_BUS_NAME);
     CtreUtils.checkCtreError(
-        encoder.getConfigurator().apply(cancoderConfig, 250), 
-        "Failed to configure CANCoder");
+        encoder.getConfigurator().apply(cancoderConfig), 
+        "Failed to configure CANCoder", canCoderPort);
     
     CtreUtils.checkCtreError(
-      encoder.getAbsolutePosition().setUpdateFrequency(10, 250), 
-        "Failed to configure CANCoder update rate");
-
-    // Configure Motor
-    motorEncoderPositionCoefficient = moduleConfiguration.getSteerReduction();
+      encoder.getAbsolutePosition().setUpdateFrequency(10), 
+        "Failed to configure CANCoder update rate", canCoderPort);
 
     var slot0Config = new Slot0Configs();
-    // TODO does the steer reduction need to be account for?
-    slot0Config.kP = STEER_kP * 1 / moduleConfiguration.getSteerReduction();
-    slot0Config.kI = STEER_kI * 1 / moduleConfiguration.getSteerReduction();
-    slot0Config.kD = STEER_kD * 1 / moduleConfiguration.getSteerReduction();
-    slot0Config.kV = STEER_kV * 1 / moduleConfiguration.getSteerReduction();
+    slot0Config.kP = STEER_kP;
+    slot0Config.kI = STEER_kI;
+    slot0Config.kD = STEER_kD;
+    slot0Config.kV = STEER_kV;
     
     var motorConfiguration = new TalonFXConfiguration();
     motorConfiguration.MotorOutput.NeutralMode = NeutralModeValue.Coast;
-    // TODO does the steer reduction need to be account for (I did account for it)?
     // TODO pick some good constraints - I just picked 60% of theoretical max, and .25s to max speed
     var motionMagicConfig = motorConfiguration.MotionMagic;
     motionMagicConfig.MotionMagicCruiseVelocity = MAX_STEER_ROTATIONS_PER_SECOND * .60;
@@ -82,21 +75,20 @@ public class SwerveSteerController {
     
     motorConfiguration.ClosedLoopGeneral.ContinuousWrap = true;
     motorConfiguration.Feedback.SensorToMechanismRatio = 1 / moduleConfiguration.getSteerReduction();
+    motorConfiguration.MotorOutput.Inverted = 
+        moduleConfiguration.isSteerInverted() ? Clockwise_Positive : CounterClockwise_Positive;
 
     motor = new TalonFX(motorPort, CANIVORE_BUS_NAME);
-    CtreUtils.checkCtreError(motor.getConfigurator().apply(motorConfiguration, CAN_TIMEOUT_MS),
-        "Failed to configure Falcon 500 id: " + motorPort);
-    CtreUtils.checkCtreError(motor.getConfigurator().apply(slot0Config, CAN_TIMEOUT_MS),
-        "Failed to configure Falcon 500 slot 0 id: " + motorPort);
+    CtreUtils.checkCtreError(motor.getConfigurator().apply(motorConfiguration),
+        "Failed to configure Falcon 500", motorPort);
+    CtreUtils.checkCtreError(motor.getConfigurator().apply(slot0Config),
+        "Failed to configure Falcon 500 slot 0", motorPort);
 
-    motor.setInverted(!moduleConfiguration.isSteerInverted());
-
-    configMotorOffset(true);
+    configMotorOffset();
 
     // Reduce CAN status frame rates
-    CtreUtils.checkCtreError(
-        motor.getControlMode().setUpdateFrequency(4.0, CAN_TIMEOUT_MS), 
-        "Failed to configure Falcon status frame period id: " + motorPort);
+    CtreUtils.checkCtreError(motor.getControlMode().setUpdateFrequency(4.0), 
+        "Failed to configure Falcon status frame period", motorPort);
     motorPositionSignal = motor.getPosition();
     
     addDashboardEntries(container);
@@ -104,9 +96,11 @@ public class SwerveSteerController {
 
   private void addDashboardEntries(ShuffleboardContainer container) {
     if (container != null) {
-      container.addNumber("Current Motor Angle", () -> getStateRotation().getRadians()).withPosition(0, 3);
-      container.addNumber("Target Angle", () -> Units.rotationsToRadians(motionMagicVoltageRequest.Position)).withPosition(0, 4);
-      container.addNumber("Absolute Encoder Angle", () -> Units.rotationsToRadians(Math.IEEEremainder(encoder.getAbsolutePosition().getValue(), 1.0))).withPosition(0, 5);
+      container.addNumber("Motor Angle", () -> getStateRotation().getRadians()).withPosition(0, 3);
+      container.addNumber("Target Angle", () -> rotationsToRadians(motionMagicVoltageRequest.Position))
+          .withPosition(0, 4);
+      container.addNumber("Encoder Angle", () -> rotationsToRadians(encoder.getAbsolutePosition().getValue()))
+          .withPosition(0, 5);
     }
   }
 
@@ -115,25 +109,30 @@ public class SwerveSteerController {
    * once. However, sometime it fails and we end up with a wheel that isn't in the right position.
    * See https://www.chiefdelphi.com/t/official-sds-mk3-mk4-code/397109/99
    */
-  public void configMotorOffset(boolean logErrors) {
+  public void configMotorOffset() {
     // TODO With Phoenix Pro, the CAN Coder and motor encoder can be fused, so this wouldn't be needed
-    var encoderPosition = encoder.getAbsolutePosition();
-    var position = encoderPosition.getValue();
-    if (encoderPosition.getError() == StatusCode.OK) {
-      motor.setRotorPosition(position); // TODO There's a bug in CTRE, this is the mechanism position, not rotor position
-    }
+    var position = encoder.getAbsolutePosition().getValue();
+      // There's a bug in Phoenix 6, this is the mechanism position, not rotor position
+      // https://api.ctr-electronics.com/changelog#known-issues-20230607
+    motor.setRotorPosition(position);
   }
 
+  /**
+   * Sets the rotation setpoint
+   * @param desiredRotation desired rotation setpoint
+   */
   public void setDesiredRotation(Rotation2d desiredRotation) {
     motionMagicVoltageRequest.Position = desiredRotation.getRotations();
     motor.setControl(motionMagicVoltageRequest);
   }
 
+  /**
+   * Gets the current wheel rotation
+   * @return Range is [-PI, PI] radians
+   */
   public Rotation2d getStateRotation() {
-    motorPositionSignal.refresh();
-    var position = motorPositionSignal.getValue();
-    position = Math.IEEEremainder(position, 1);
-    return Rotation2d.fromRotations(position);
+    var position = motorPositionSignal.refresh().getValue();
+    return Rotation2d.fromRotations(Math.IEEEremainder(position, 1));
   }
 
   /**

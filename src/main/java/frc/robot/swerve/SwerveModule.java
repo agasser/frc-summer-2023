@@ -53,7 +53,7 @@ public class SwerveModule {
    * Reseeds to Talon FX motor offset from the CANCoder. Workaround for "dead wheel"
    */
   public void reseedSteerMotorOffset() {
-    steerController.configMotorOffset(false);
+    steerController.configMotorOffset();
   }
 
 }

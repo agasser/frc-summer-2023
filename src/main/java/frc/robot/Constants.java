@@ -7,7 +7,6 @@ package frc.robot;
 import static edu.wpi.first.math.util.Units.degreesToRadians;
 import static edu.wpi.first.math.util.Units.inchesToMeters;
 import static java.lang.Math.PI;
-import static java.lang.Math.toRadians;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -55,22 +54,22 @@ public final class Constants {
     public static final int FRONT_LEFT_MODULE_DRIVE_MOTOR = 0;
     public static final int FRONT_LEFT_MODULE_STEER_MOTOR = 10;
     public static final int FRONT_LEFT_MODULE_STEER_ENCODER = 20;
-    public static final double FRONT_LEFT_MODULE_STEER_OFFSET = -toRadians(290.3027);
+    public static final double FRONT_LEFT_MODULE_STEER_OFFSET = 1.2241166687327416;
 
     public static final int FRONT_RIGHT_MODULE_DRIVE_MOTOR = 1;
     public static final int FRONT_RIGHT_MODULE_STEER_MOTOR = 11;
     public static final int FRONT_RIGHT_MODULE_STEER_ENCODER = 21;
-    public static final double FRONT_RIGHT_MODULE_STEER_OFFSET = -toRadians(58.1836);
+    public static final double FRONT_RIGHT_MODULE_STEER_OFFSET = -1.0154952815802945;
 
     public static final int BACK_LEFT_MODULE_DRIVE_MOTOR = 2;
     public static final int BACK_LEFT_MODULE_STEER_MOTOR = 12;
     public static final int BACK_LEFT_MODULE_STEER_ENCODER = 22;
-    public static final double BACK_LEFT_MODULE_STEER_OFFSET = -toRadians(204.7852);
+    public static final double BACK_LEFT_MODULE_STEER_OFFSET = 2.696738225102957;
 
     public static final int BACK_RIGHT_MODULE_DRIVE_MOTOR = 3;
     public static final int BACK_RIGHT_MODULE_STEER_MOTOR = 13;
     public static final int BACK_RIGHT_MODULE_STEER_ENCODER = 23;
-    public static final double BACK_RIGHT_MODULE_STEER_OFFSET = -toRadians(291.9727);
+    public static final double BACK_RIGHT_MODULE_STEER_OFFSET = 1.1765632643082868;
     
     public static final int PIGEON_ID = 30;
 
@@ -115,10 +114,10 @@ public final class Constants {
     public static final double DRIVE_kA = 0.52878;
 
     // TODO convert these constants
-    public static final double STEER_kP = 4.8046920;
-    public static final double STEER_kI = 24.02346;
+    public static final double STEER_kP = 103;
+    public static final double STEER_kI = 515;
     public static final double STEER_kD = 0.0;
-    public static final double STEER_kV = 0.0366525935483871;
+    public static final double STEER_kV = 0.7854;
 
     public static final double DRIVE_kP = 0.04;
     public static final double DRIVE_kI = 0.0;

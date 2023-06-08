@@ -9,15 +9,15 @@ public final class CtreUtils {
   private CtreUtils() {
   }
 
-  public static void checkCtreError(ErrorCode errorCode, String message) {
+  public static void checkCtreError(ErrorCode errorCode, String message, int port) {
     if (errorCode != ErrorCode.OK) {
-      DriverStation.reportError(String.format("%s: %s", message, errorCode.toString()), false);
+      DriverStation.reportError(String.format("%s ID: %s StatusCode: ", message, port, errorCode.toString()), false);
     }
   }
 
-  public static void checkCtreError(StatusCode statusCode, String message) {
+  public static void checkCtreError(StatusCode statusCode, String message, int port) {
     if (statusCode != StatusCode.OK) {
-      DriverStation.reportError(String.format("%s: %s", message, statusCode.toString()), false);
+      DriverStation.reportError(String.format("%s ID: %s StatusCode: ", message, port, statusCode.toString()), false);
     }
   }
 }
