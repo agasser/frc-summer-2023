@@ -66,8 +66,8 @@ public class SwerveSteerController {
     motorConfiguration.MotorOutput.NeutralMode = NeutralModeValue.Coast;
     // TODO pick some good constraints - I just picked 60% of theoretical max, and .25s to max speed
     var motionMagicConfig = motorConfiguration.MotionMagic;
-    motionMagicConfig.MotionMagicCruiseVelocity = MAX_STEER_ROTATIONS_PER_SECOND * .60;
-    motionMagicConfig.MotionMagicAcceleration = MAX_STEER_ROTATIONS_PER_SECOND * 4;
+    motionMagicConfig.MotionMagicCruiseVelocity = MAX_STEER_ROTATIONS_PER_SECOND * .80;
+    motionMagicConfig.MotionMagicAcceleration = MAX_STEER_ROTATIONS_PER_SECOND * 8;
     
     var currentLimitConfig = motorConfiguration.CurrentLimits;
     currentLimitConfig.SupplyCurrentLimit = 20;
@@ -85,12 +85,8 @@ public class SwerveSteerController {
         "Failed to configure Falcon 500 slot 0", motorPort);
 
     configMotorOffset();
-
-    // Reduce CAN status frame rates
-    CtreUtils.checkCtreError(motor.getControlMode().setUpdateFrequency(4.0), 
-        "Failed to configure Falcon status frame period", motorPort);
     motorPositionSignal = motor.getPosition();
-    
+    motorPositionSignal.setUpdateFrequency(100.0);
     addDashboardEntries(container);
   }
 
@@ -137,7 +133,7 @@ public class SwerveSteerController {
 
   /**
    * Sets the neutral mode to brake mode or coast mode
-   * @param neutralMode neutral mode
+   * @param brakeMode true to use brake mode, false for coast mode
    */
   public void setBrakeMode(boolean brakeMode) {
     motionMagicVoltageRequest.OverrideBrakeDurNeutral = brakeMode;

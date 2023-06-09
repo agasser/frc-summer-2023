@@ -106,23 +106,18 @@ public final class Constants {
         new Translation2d(-DRIVETRAIN_WHEELBASE_METERS / 2.0, -DRIVETRAIN_TRACKWIDTH_METERS / 2.0)
     );
 
-    /** Voltage needed to overcome the motor’s static friction. kS */
-    public static final double DRIVE_kS = 0.18;
-    /** Voltage needed to hold (or "cruise") at a given constant velocity. kV */
-    public static final double DRIVE_kV = 2.300;
-    /** Voltage needed to induce a given acceleration in the motor shaft. kA */
-    public static final double DRIVE_kA = 0.52878;
-
-    // TODO convert these constants
-    public static final double STEER_kP = 103;
-    public static final double STEER_kI = 515;
+    public static final double STEER_kP = 30.0;
+    public static final double STEER_kI = 0.0;
     public static final double STEER_kD = 0.0;
     public static final double STEER_kV = 0.7854;
 
-    public static final double DRIVE_kP = 0.04;
+    public static final double DRIVE_kP = 1.5;
     public static final double DRIVE_kI = 0.0;
     public static final double DRIVE_kD = 0.0;
-
+    /** Voltage needed to overcome the motor’s static friction. kS */
+    public static final double DRIVE_kS = 0.180000;
+    /** Voltage needed to hold (or "cruise") at a given constant velocity. kV */
+    public static final double DRIVE_kV = 0.70196;
   }
 
   public static final class TeleopDriveConstants {

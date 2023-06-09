@@ -32,7 +32,6 @@ import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
-import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix6.configs.Pigeon2Configuration;
 import com.ctre.phoenix6.hardware.Pigeon2;
 import com.pathplanner.lib.PathPlannerTrajectory;
@@ -49,6 +48,7 @@ import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.wpilibj.RobotState;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardLayout;
@@ -56,6 +56,7 @@ import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants.AutoDriveConstants;
 import frc.robot.Constants.DrivetrainConstants;
 import frc.robot.swerve.ModuleConfiguration;
@@ -115,10 +116,7 @@ public class DrivetrainSubsystem extends SubsystemBase {
             FRONT_LEFT_MODULE_DRIVE_MOTOR,
             FRONT_LEFT_MODULE_STEER_MOTOR,
             FRONT_LEFT_MODULE_STEER_ENCODER,
-            FRONT_LEFT_MODULE_STEER_OFFSET,
-            DrivetrainConstants.DRIVE_kS,
-            DrivetrainConstants.DRIVE_kV,
-            DrivetrainConstants.DRIVE_kA
+            FRONT_LEFT_MODULE_STEER_OFFSET
         ),
         createSwerveModule(
             frontRightLayout,
@@ -126,10 +124,7 @@ public class DrivetrainSubsystem extends SubsystemBase {
             FRONT_RIGHT_MODULE_DRIVE_MOTOR,
             FRONT_RIGHT_MODULE_STEER_MOTOR,
             FRONT_RIGHT_MODULE_STEER_ENCODER,
-            FRONT_RIGHT_MODULE_STEER_OFFSET,
-            DrivetrainConstants.DRIVE_kS,
-            DrivetrainConstants.DRIVE_kV,
-            DrivetrainConstants.DRIVE_kA
+            FRONT_RIGHT_MODULE_STEER_OFFSET
         ),
         createSwerveModule(
             backLeftLayout,
@@ -137,10 +132,7 @@ public class DrivetrainSubsystem extends SubsystemBase {
             BACK_LEFT_MODULE_DRIVE_MOTOR,
             BACK_LEFT_MODULE_STEER_MOTOR,
             BACK_LEFT_MODULE_STEER_ENCODER,
-            BACK_LEFT_MODULE_STEER_OFFSET,
-            DrivetrainConstants.DRIVE_kS,
-            DrivetrainConstants.DRIVE_kV,
-            DrivetrainConstants.DRIVE_kA
+            BACK_LEFT_MODULE_STEER_OFFSET
         ),
         createSwerveModule(
             backRightLayout,
@@ -148,16 +140,12 @@ public class DrivetrainSubsystem extends SubsystemBase {
             BACK_RIGHT_MODULE_DRIVE_MOTOR,
             BACK_RIGHT_MODULE_STEER_MOTOR,
             BACK_RIGHT_MODULE_STEER_ENCODER,
-            BACK_RIGHT_MODULE_STEER_OFFSET,
-            DrivetrainConstants.DRIVE_kS,
-            DrivetrainConstants.DRIVE_kV,
-            DrivetrainConstants.DRIVE_kA
+            BACK_RIGHT_MODULE_STEER_OFFSET
         )};
 
-      // Put all the modules into brake mode
-      for (SwerveModule swerveModule : swerveModules) {
-        swerveModule.setNeutralMode(NeutralMode.Brake);
-      }
+      new Trigger(RobotState::isEnabled)
+           .onTrue(runOnce(() -> setBrakeMode(true)))
+           .onFalse(runOnce(() -> setBrakeMode(false)).ignoringDisable(true));
   }
 
   /**
@@ -176,13 +164,10 @@ public class DrivetrainSubsystem extends SubsystemBase {
       int driveMotorPort,
       int steerMotorPort,
       int steerEncoderPort,
-      double steerOffset,
-      double kS,
-      double kV,
-      double kA) {
+      double steerOffset) {
 
     return new SwerveModule(
-        new SwerveSpeedController(driveMotorPort, moduleConfiguration, container, kS, kV, kA), 
+        new SwerveSpeedController(driveMotorPort, moduleConfiguration, container), 
         new SwerveSteerController(steerMotorPort, steerEncoderPort, steerOffset, container, moduleConfiguration));
   }
 
@@ -243,11 +228,10 @@ public class DrivetrainSubsystem extends SubsystemBase {
       double[] moduleStateArray = new double[swerveModules.length * 2];
       for (int i = 0; i < swerveModules.length; i ++) {
         var module = swerveModules[i];
-        moduleStateArray[i * 2] = module.getSteerAngle().getDegrees();
+        moduleStateArray[i * 2] = module.getSteerAngle().getRadians();
         moduleStateArray[(i * 2) + 1] = module.getDriveVelocity();
       }
       moduleStatesTable.getEntry("Measured").setDoubleArray(moduleStateArray);
-      moduleStatesTable.getEntry("Rotation").setDouble(getGyroscopeRotation().getDegrees());
     }
     // Always reset desiredChassisSpeeds to null to prevent latching to the last state (aka motor safety)!!
     desiredChassisSpeeds = null;
@@ -282,7 +266,7 @@ public class DrivetrainSubsystem extends SubsystemBase {
       
       // Module setpoints for Advantage Scope
       if (DrivetrainConstants.ADD_TO_DASHBOARD) {
-        moduleSetpointArray[i * 2] = desiredState.angle.getDegrees();
+        moduleSetpointArray[i * 2] = desiredState.angle.getRadians();
         moduleSetpointArray[(i * 2) + 1] = desiredState.speedMetersPerSecond;
       }
     });
@@ -341,6 +325,12 @@ public class DrivetrainSubsystem extends SubsystemBase {
     );
 
     return ppSwerveCommand;
+  }
+
+  public void setBrakeMode(boolean brakeMode) {
+    for (SwerveModule swerveModule : swerveModules) {
+      swerveModule.setBrakeMode(brakeMode);
+    }
   }
 
 }

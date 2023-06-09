@@ -14,6 +14,8 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.networktables.NetworkTable;
+import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
@@ -44,6 +46,8 @@ public class PoseEstimatorCommand extends CommandBase {
    * less. This matrix is in the form [x, y, theta]ᵀ, with units in meters and radians.
    */
   private static final Vector<N3> visionMeasurementStdDevs = VecBuilder.fill(1.5, 1.5, 1.5);
+
+  private static final NetworkTable moduleStatesTable = NetworkTableInstance.getDefault().getTable("SwerveStates");
 
   private final Supplier<Rotation2d> rotationSupplier;
   private final Supplier<SwerveModulePosition[]> modulePositionSupplier;
@@ -108,7 +112,7 @@ public class PoseEstimatorCommand extends CommandBase {
 
   @Override
   public void initialize() {
-    photonNotifier.startPeriodic(0.02);
+    // photonNotifier.startPeriodic(0.02);
   }
 
   @Override
@@ -129,6 +133,7 @@ public class PoseEstimatorCommand extends CommandBase {
 
     // Set the pose on the dashboard
     var dashboardPose = poseEstimator.getEstimatedPosition();
+    moduleStatesTable.getEntry("Rotation").setDouble(dashboardPose.getRotation().getRadians());
     if (originPosition == kRedAllianceWallRightSide) {
       // Flip the pose when red, since the dashboard field photo cannot be rotated
       dashboardPose = flipAlliance(dashboardPose);

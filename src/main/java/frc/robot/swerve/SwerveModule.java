@@ -1,7 +1,5 @@
 package frc.robot.swerve;
 
-import com.ctre.phoenix.motorcontrol.NeutralMode;
-
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
@@ -42,11 +40,11 @@ public class SwerveModule {
 
   /**
    * Sets the neutral mode for the drive and steer motors
-   * @param neutralMode neutral mode
+   * @param brakeMode true to use brake mode, false for coast mode
    */
-  public void setNeutralMode(NeutralMode neutralMode) {
-    steerController.setBrakeMode(NeutralMode.Brake == neutralMode);
-    driveController.setNeutralMode(neutralMode);
+  public void setBrakeMode(boolean brakeMode) {
+    steerController.setBrakeMode(brakeMode);
+    driveController.setBrakeMode(brakeMode);
   }
 
   /**
