@@ -101,16 +101,16 @@ public class SwerveSteerController {
   }
 
   /**
-   * Configures the motor offset from the CANCoder's abosolute position. In an ideal state, this only needs to happen
-   * once. However, sometime it fails and we end up with a wheel that isn't in the right position.
-   * See https://www.chiefdelphi.com/t/official-sds-mk3-mk4-code/397109/99
+   * Configures the motor offset from the CANCoder's abosolute position.
    */
   public void configMotorOffset() {
-    // TODO With Phoenix Pro, the CAN Coder and motor encoder can be fused, so this wouldn't be needed
-    var position = encoder.getAbsolutePosition().getValue();
-      // There's a bug in Phoenix 6, this is the mechanism position, not rotor position
-      // https://api.ctr-electronics.com/changelog#known-issues-20230607
-    motor.setRotorPosition(position);
+    // With Phoenix Pro, the CAN Coder and motor encoder can be fused, so this wouldn't be needed
+    var position = encoder.getAbsolutePosition().waitForUpdate(0.2);
+    CtreUtils.checkCtreError(position.getError(), "Failed to read position from CANcoder", encoder.getDeviceID());
+    // There's a bug in Phoenix 6, this is the mechanism position, not rotor position
+    // https://api.ctr-electronics.com/changelog#known-issues-20230607
+    CtreUtils.checkCtreError(
+        motor.setRotorPosition(position.getValue()), "Failed to set motor position", motor.getDeviceID());
   }
 
   /**
