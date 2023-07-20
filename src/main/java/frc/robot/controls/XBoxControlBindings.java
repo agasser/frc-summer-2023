@@ -5,7 +5,6 @@ import static frc.robot.Constants.DrivetrainConstants.MAX_VELOCITY_METERS_PER_SE
 import static frc.robot.Constants.TeleopDriveConstants.XBOX_CONTROLLER_DEADBAND;
 
 import java.util.Optional;
-import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 
 import edu.wpi.first.math.MathUtil;
@@ -43,14 +42,6 @@ public class XBoxControlBindings implements ControlBindings {
   @Override
   public DoubleSupplier omega() {
     return () -> -modifyAxis(driverController.getRightX()) * MAX_ANGULAR_VELOCITY_RADIANS_PER_SECOND / 2;
-  }
-
-  @Override
-  public BooleanSupplier driverWantsControl() {
-    return () -> modifyAxis(driverController.getLeftY()) != 0.0 
-        || modifyAxis(driverController.getLeftX()) != 0.0
-        || modifyAxis(driverController.getLeftY()) != 0.0
-        || modifyAxis(driverController.getLeftX()) != 0.0;
   }
   
   private static double modifyAxis(double value) {

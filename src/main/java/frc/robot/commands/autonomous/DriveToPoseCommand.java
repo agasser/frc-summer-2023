@@ -30,8 +30,7 @@ public class DriveToPoseCommand extends CommandBase {
   
   private static final double TRANSLATION_TOLERANCE = 0.02;
   private static final double THETA_TOLERANCE = Units.degreesToRadians(2.0);
-
-  /** Default constraints are 90% of max speed, accelerate to full speed in 1/3 second */
+  
   private static final TrapezoidProfile.Constraints DEFAULT_XY_CONSTRAINTS = new TrapezoidProfile.Constraints(
       MAX_VELOCITY_METERS_PER_SECOND * 0.5,
       MAX_VELOCITY_METERS_PER_SECOND);

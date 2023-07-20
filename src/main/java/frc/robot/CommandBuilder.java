@@ -30,6 +30,7 @@ public class CommandBuilder {
 
   /**
    * Wraps the given command so that it will end if the robot's X coordinate becomes greater than the given value.
+   * This is useful in autonomous to prevent the robot from driving onto the opponent's side of the field.
    * @param command command to wrap
    * @param x x value
    * @return wrapped command

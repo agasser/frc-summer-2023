@@ -96,7 +96,9 @@ public class RobotContainer {
     // POV Right to put the wheels in an X until the driver tries to drive
     controlBindings.wheelsToX()
         .ifPresent(trigger -> trigger.onTrue(run(drivetrainSubsystem::setWheelsToX, drivetrainSubsystem)
-            .until(controlBindings.driverWantsControl())));
+            .until(() -> controlBindings.translationX().getAsDouble() != 0
+                || controlBindings.translationY().getAsDouble() != 0
+                || controlBindings.omega().getAsDouble() != 0 )));
 
   }
 

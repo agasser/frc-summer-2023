@@ -64,7 +64,6 @@ public class SwerveSteerController {
     
     var motorConfiguration = new TalonFXConfiguration();
     motorConfiguration.MotorOutput.NeutralMode = NeutralModeValue.Coast;
-    // TODO pick some good constraints - I just picked 60% of theoretical max, and .25s to max speed
     var motionMagicConfig = motorConfiguration.MotionMagic;
     motionMagicConfig.MotionMagicCruiseVelocity = MAX_STEER_ROTATIONS_PER_SECOND * .80;
     motionMagicConfig.MotionMagicAcceleration = MAX_STEER_ROTATIONS_PER_SECOND * 8;

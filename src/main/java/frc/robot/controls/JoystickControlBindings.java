@@ -5,7 +5,6 @@ import static frc.robot.Constants.DrivetrainConstants.MAX_VELOCITY_METERS_PER_SE
 import static frc.robot.Constants.TeleopDriveConstants.JOYSTICK_DEADBAND;
 
 import java.util.Optional;
-import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 
 import edu.wpi.first.math.MathUtil;
@@ -45,14 +44,6 @@ public class JoystickControlBindings implements ControlBindings {
   @Override
   public DoubleSupplier omega() {
     return () -> -modifyAxis(rightJoystick.getX()) * MAX_ANGULAR_VELOCITY_RADIANS_PER_SECOND / 2;
-  }
-
-  @Override
-  public BooleanSupplier driverWantsControl() {
-    return () -> modifyAxis(leftJoystick.getY()) != 0.0 
-        || modifyAxis(leftJoystick.getX()) != 0.0
-        || modifyAxis(rightJoystick.getY()) != 0.0
-        || modifyAxis(rightJoystick.getX()) != 0.0;
   }
   
   private static double modifyAxis(double value) {
