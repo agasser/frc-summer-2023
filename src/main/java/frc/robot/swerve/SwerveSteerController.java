@@ -106,10 +106,8 @@ public class SwerveSteerController {
     // With Phoenix Pro, the CAN Coder and motor encoder can be fused, so this wouldn't be needed
     var position = encoder.getAbsolutePosition().waitForUpdate(0.2);
     CtreUtils.checkCtreError(position.getError(), "Failed to read position from CANcoder", encoder.getDeviceID());
-    // There's a bug in Phoenix 6, this is the mechanism position, not rotor position
-    // https://api.ctr-electronics.com/changelog#known-issues-20230607
     CtreUtils.checkCtreError(
-        motor.setRotorPosition(position.getValue()), "Failed to set motor position", motor.getDeviceID());
+        motor.setPosition(position.getValue()), "Failed to set motor position", motor.getDeviceID());
   }
 
   /**
