@@ -167,3 +167,5 @@ networktables.json
 
 # Merge conflict diff files
 *.orig
+
+ctre_sim/
