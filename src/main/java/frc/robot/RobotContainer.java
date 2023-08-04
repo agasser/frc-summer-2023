@@ -12,7 +12,6 @@ import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Command.InterruptionBehavior;
 import frc.robot.commands.FieldOrientedDriveCommand;
 import frc.robot.commands.PoseEstimatorCommand;
 import frc.robot.controls.ControlBindings;
@@ -88,10 +87,6 @@ public class RobotContainer {
   private void configureButtonBindings() {
     // reset the robot pose
     controlBindings.resetPose().ifPresent(trigger -> trigger.onTrue(runOnce(poseEstimator::resetFieldPosition)));
-    // Start button reseeds the steer motors to fix dead wheel
-    controlBindings.reseedSteerMotors()
-        .ifPresent(trigger -> trigger.onTrue(drivetrainSubsystem.runOnce(drivetrainSubsystem::reseedSteerMotorOffsets)
-            .withInterruptBehavior(InterruptionBehavior.kCancelIncoming)));
 
     // POV Right to put the wheels in an X until the driver tries to drive
     controlBindings.wheelsToX()

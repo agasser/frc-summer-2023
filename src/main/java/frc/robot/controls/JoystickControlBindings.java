@@ -18,11 +18,6 @@ public class JoystickControlBindings implements ControlBindings {
   private final CommandJoystick rightJoystick = new CommandJoystick(1);
 
   @Override
-  public Optional<Trigger> reseedSteerMotors() {
-    return Optional.of(leftJoystick.button(6));
-  }
-
-  @Override
   public Optional<Trigger> resetPose() {
     return Optional.of(leftJoystick.povDown());
   }

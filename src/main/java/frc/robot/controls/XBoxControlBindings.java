@@ -16,11 +16,6 @@ public class XBoxControlBindings implements ControlBindings {
   private final CommandXboxController driverController = new CommandXboxController(0);;
 
   @Override
-  public Optional<Trigger> reseedSteerMotors() {
-    return Optional.of(driverController.start());
-  }
-
-  @Override
   public Optional<Trigger> resetPose() {
     return Optional.of(driverController.back());
   }

@@ -18,6 +18,7 @@ import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.AbsoluteSensorRangeValue;
+import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
 
@@ -73,7 +74,9 @@ public class SwerveSteerController {
     currentLimitConfig.SupplyCurrentLimitEnable = true;
     
     motorConfiguration.ClosedLoopGeneral.ContinuousWrap = true;
-    motorConfiguration.Feedback.SensorToMechanismRatio = 1 / moduleConfiguration.getSteerReduction();
+    motorConfiguration.Feedback.RotorToSensorRatio = 1 / moduleConfiguration.getSteerReduction();
+    motorConfiguration.Feedback.FeedbackRemoteSensorID = canCoderPort;
+    motorConfiguration.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.FusedCANcoder;
     motorConfiguration.MotorOutput.Inverted = 
         moduleConfiguration.isSteerInverted() ? Clockwise_Positive : CounterClockwise_Positive;
 
@@ -83,7 +86,6 @@ public class SwerveSteerController {
     CtreUtils.checkCtreError(motor.getConfigurator().apply(slot0Config),
         "Failed to configure Falcon 500 slot 0", motorPort);
 
-    configMotorOffset();
     motorPositionSignal = motor.getPosition();
     motorPositionSignal.setUpdateFrequency(100.0);
     addDashboardEntries(container);
@@ -97,17 +99,6 @@ public class SwerveSteerController {
       container.addNumber("Encoder Angle", () -> rotationsToRadians(encoder.getAbsolutePosition().getValue()))
           .withPosition(0, 5);
     }
-  }
-
-  /**
-   * Configures the motor offset from the CANCoder's abosolute position.
-   */
-  public void configMotorOffset() {
-    // With Phoenix Pro, the CAN Coder and motor encoder can be fused, so this wouldn't be needed
-    var position = encoder.getAbsolutePosition().waitForUpdate(0.2);
-    CtreUtils.checkCtreError(position.getError(), "Failed to read position from CANcoder", encoder.getDeviceID());
-    CtreUtils.checkCtreError(
-        motor.setPosition(position.getValue()), "Failed to set motor position", motor.getDeviceID());
   }
 
   /**
