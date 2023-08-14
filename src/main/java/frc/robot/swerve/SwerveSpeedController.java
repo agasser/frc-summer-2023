@@ -6,13 +6,11 @@ import static frc.robot.Constants.DrivetrainConstants.CANIVORE_BUS_NAME;
 import static frc.robot.Constants.DrivetrainConstants.DRIVE_kD;
 import static frc.robot.Constants.DrivetrainConstants.DRIVE_kI;
 import static frc.robot.Constants.DrivetrainConstants.DRIVE_kP;
-import static frc.robot.Constants.DrivetrainConstants.DRIVE_kS;
-import static frc.robot.Constants.DrivetrainConstants.DRIVE_kV;
 
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.controls.VelocityVoltage;
+import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
@@ -25,7 +23,7 @@ public class SwerveSpeedController {
   /** How many meters per revolution of the wheel (not the motor) */
   private final double metersPerRevolution;
 
-  private final VelocityVoltage velocityVoltageRequest = new VelocityVoltage(0);
+  private final VelocityTorqueCurrentFOC velocityFOCRequest = new VelocityTorqueCurrentFOC(0);
   private final StatusSignal<Double> velocitySignal;
   private final StatusSignal<Double> positionSignal;
 
@@ -35,19 +33,18 @@ public class SwerveSpeedController {
 
     TalonFXConfiguration motorConfiguration = new TalonFXConfiguration();
 
-    motorConfiguration.CurrentLimits.SupplyCurrentLimit = 80;
-    motorConfiguration.CurrentLimits.SupplyCurrentLimitEnable = true;
-    motorConfiguration.MotorOutput.NeutralMode = NeutralModeValue.Coast;
+    motorConfiguration.TorqueCurrent.PeakForwardTorqueCurrent = 40;
+    motorConfiguration.TorqueCurrent.PeakReverseTorqueCurrent = -40;
+    motorConfiguration.MotorOutput.NeutralMode = NeutralModeValue.Brake;
     motorConfiguration.MotorOutput.Inverted =
         moduleConfiguration.isDriveInverted() ? Clockwise_Positive : CounterClockwise_Positive;
     motorConfiguration.Feedback.SensorToMechanismRatio = 1 / moduleConfiguration.getDriveReduction();
 
     Slot0Configs slot0Configs = new Slot0Configs();
+    // TODO gains are from voltage, not amperage - need to tune
     slot0Configs.kP = DRIVE_kP;
     slot0Configs.kI = DRIVE_kI;
     slot0Configs.kD = DRIVE_kD;
-    slot0Configs.kS = DRIVE_kS;
-    slot0Configs.kV = DRIVE_kV;
 
     motor = new TalonFX(port, CANIVORE_BUS_NAME);
     CtreUtils.checkCtreError(motor.getConfigurator().apply(motorConfiguration), "Failed to configure Falcon 500", port);
@@ -62,15 +59,14 @@ public class SwerveSpeedController {
   private void addDashboardEntries(ShuffleboardContainer container) {
     if (container != null) {
       container.addNumber("Current Velocity", () -> getStateVelocity()).withPosition(0, 0);
-      container.addNumber("Target Velocity", () -> velocityVoltageRequest.Velocity * metersPerRevolution)
+      container.addNumber("Target Velocity", () -> velocityFOCRequest.Velocity * metersPerRevolution)
           .withPosition(0, 1);
       container.addNumber("Current Position", () -> getStatePosition()).withPosition(0, 2);
     }
   }
 
   public void setReferenceVelocity(double velocity) {
-    velocityVoltageRequest.Velocity = velocity / metersPerRevolution;
-    motor.setControl(velocityVoltageRequest);
+    motor.setControl(velocityFOCRequest.withVelocity(velocity / metersPerRevolution));
   }
 
   /**
@@ -94,7 +90,7 @@ public class SwerveSpeedController {
    * @param brakeMode true to use brake mode, false for coast mode
    */
   public void setBrakeMode(boolean brakeMode) {
-    velocityVoltageRequest.OverrideBrakeDurNeutral = brakeMode;
+    velocityFOCRequest.OverrideCoastDurNeutral = !brakeMode;
   }
 
 }

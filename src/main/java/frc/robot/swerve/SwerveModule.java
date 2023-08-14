@@ -39,12 +39,11 @@ public class SwerveModule {
   }
 
   /**
-   * Sets the neutral mode for the drive and steer motors
+   * Sets the neutral mode for the steer motors
    * @param brakeMode true to use brake mode, false for coast mode
    */
   public void setBrakeMode(boolean brakeMode) {
     steerController.setBrakeMode(brakeMode);
-    driveController.setBrakeMode(brakeMode);
   }
 
 }

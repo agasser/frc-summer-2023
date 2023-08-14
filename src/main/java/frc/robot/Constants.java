@@ -114,10 +114,6 @@ public final class Constants {
     public static final double DRIVE_kP = 1.5;
     public static final double DRIVE_kI = 0.0;
     public static final double DRIVE_kD = 0.0;
-    /** Voltage needed to overcome the motor’s static friction. kS */
-    public static final double DRIVE_kS = 0.180000;
-    /** Voltage needed to hold (or "cruise") at a given constant velocity. kV */
-    public static final double DRIVE_kV = 0.70196;
   }
 
   public static final class TeleopDriveConstants {
