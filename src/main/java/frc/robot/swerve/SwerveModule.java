@@ -44,6 +44,7 @@ public class SwerveModule {
    */
   public void setBrakeMode(boolean brakeMode) {
     steerController.setBrakeMode(brakeMode);
+    driveController.setBrakeMode(brakeMode);
   }
 
 }
