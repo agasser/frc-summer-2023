@@ -69,8 +69,7 @@ public class SwerveSpeedController {
   }
 
   public void setReferenceVelocity(double velocity) {
-    velocityVoltageRequest.Velocity = velocity / metersPerRevolution;
-    motor.setControl(velocityVoltageRequest);
+    motor.setControl(velocityVoltageRequest.withVelocity(velocity / metersPerRevolution));
   }
 
   /**
