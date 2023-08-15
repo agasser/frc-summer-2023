@@ -117,8 +117,7 @@ public class SwerveSteerController {
    * @param desiredRotation desired rotation setpoint
    */
   public void setDesiredRotation(Rotation2d desiredRotation) {
-    motionMagicVoltageRequest.Position = desiredRotation.getRotations();
-    motor.setControl(motionMagicVoltageRequest);
+    motor.setControl(motionMagicVoltageRequest.withPosition(desiredRotation.getRotations()));
   }
 
   /**
