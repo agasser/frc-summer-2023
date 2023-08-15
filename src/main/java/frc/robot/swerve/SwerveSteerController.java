@@ -12,7 +12,6 @@ import static frc.robot.Constants.DrivetrainConstants.STEER_kV;
 
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
-import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.hardware.CANcoder;
@@ -54,28 +53,28 @@ public class SwerveSteerController {
         "Failed to configure CANCoder", canCoderPort);
     
     CtreUtils.checkCtreError(
-      encoder.getAbsolutePosition().setUpdateFrequency(10), 
+      encoder.getAbsolutePosition().setUpdateFrequency(100), 
         "Failed to configure CANCoder update rate", canCoderPort);
 
-    var slot0Config = new Slot0Configs();
-    slot0Config.kP = STEER_kP;
-    slot0Config.kI = STEER_kI;
-    slot0Config.kD = STEER_kD;
-    slot0Config.kV = STEER_kV;
-    
     var motorConfiguration = new TalonFXConfiguration();
     motorConfiguration.MotorOutput.NeutralMode = NeutralModeValue.Coast;
     var motionMagicConfig = motorConfiguration.MotionMagic;
     motionMagicConfig.MotionMagicCruiseVelocity = MAX_STEER_ROTATIONS_PER_SECOND * .80;
     motionMagicConfig.MotionMagicAcceleration = MAX_STEER_ROTATIONS_PER_SECOND * 8;
     
+    var slot0Config = motorConfiguration.Slot0;
+    slot0Config.kP = STEER_kP;
+    slot0Config.kI = STEER_kI;
+    slot0Config.kD = STEER_kD;
+    slot0Config.kV = STEER_kV;
+
     var currentLimitConfig = motorConfiguration.CurrentLimits;
     currentLimitConfig.SupplyCurrentLimit = 20;
     currentLimitConfig.SupplyCurrentLimitEnable = true;
     
     motorConfiguration.ClosedLoopGeneral.ContinuousWrap = true;
     motorConfiguration.Feedback.RotorToSensorRatio = 1 / moduleConfiguration.getSteerReduction();
-    motorConfiguration.Feedback.FeedbackRemoteSensorID = canCoderPort;
+    motorConfiguration.Feedback.FeedbackRemoteSensorID = encoder.getDeviceID();
     motorConfiguration.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.FusedCANcoder;
     motorConfiguration.MotorOutput.Inverted = 
         moduleConfiguration.isSteerInverted() ? Clockwise_Positive : CounterClockwise_Positive;
@@ -83,8 +82,6 @@ public class SwerveSteerController {
     motor = new TalonFX(motorPort, CANIVORE_BUS_NAME);
     CtreUtils.checkCtreError(motor.getConfigurator().apply(motorConfiguration),
         "Failed to configure Falcon 500", motorPort);
-    CtreUtils.checkCtreError(motor.getConfigurator().apply(slot0Config),
-        "Failed to configure Falcon 500 slot 0", motorPort);
 
     motorPositionSignal = motor.getPosition();
     motorPositionSignal.setUpdateFrequency(100.0);
@@ -106,13 +103,12 @@ public class SwerveSteerController {
    * @param desiredRotation desired rotation setpoint
    */
   public void setDesiredRotation(Rotation2d desiredRotation) {
-    motionMagicVoltageRequest.Position = desiredRotation.getRotations();
-    motor.setControl(motionMagicVoltageRequest);
+    motor.setControl(motionMagicVoltageRequest.withPosition(desiredRotation.getRotations()));
   }
 
   /**
    * Gets the current wheel rotation
-   * @return Range is [-PI, PI] radians
+   * @return Range is [-.5, .5] radians
    */
   public Rotation2d getStateRotation() {
     var position = motorPositionSignal.refresh().getValue();
