@@ -111,7 +111,7 @@ public final class Constants {
     public static final double STEER_kD = 0.0;
     public static final double STEER_kV = 0.7854;
 
-    public static final double DRIVE_kP = 1.5;
+    public static final double DRIVE_kP = 13.0;
     public static final double DRIVE_kI = 0.0;
     public static final double DRIVE_kD = 0.0;
   }
