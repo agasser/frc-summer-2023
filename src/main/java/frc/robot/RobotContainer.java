@@ -13,7 +13,6 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.commands.FieldOrientedDriveCommand;
-import frc.robot.commands.PoseEstimatorCommand;
 import frc.robot.controls.ControlBindings;
 import frc.robot.controls.JoystickControlBindings;
 import frc.robot.controls.XBoxControlBindings;
@@ -30,15 +29,13 @@ public class RobotContainer {
   private final ControlBindings controlBindings;
 
   private final DrivetrainSubsystem drivetrainSubsystem = new DrivetrainSubsystem();
-  private final PoseEstimatorCommand poseEstimator =
-      new PoseEstimatorCommand(drivetrainSubsystem::getGyroscopeRotation, drivetrainSubsystem::getModulePositions);
   
   private final FieldOrientedDriveCommand fieldOrientedDriveCommand;
 
   private final Timer reseedTimer = new Timer();
 
   private final AutonomousBuilder autoBuilder =
-      new AutonomousBuilder(drivetrainSubsystem, poseEstimator::getCurrentPose, poseEstimator::setCurrentPose);
+      new AutonomousBuilder(drivetrainSubsystem, drivetrainSubsystem::getCurrentPose, drivetrainSubsystem::setCurrentPose);
   
   /**
    * The container for the robot. Contains subsystems, OI devices, and commands.
@@ -51,12 +48,9 @@ public class RobotContainer {
       controlBindings = new JoystickControlBindings();
     }
 
-    // Schedule the pose estimator (repeatedly in case it unexpectedly stops)
-    poseEstimator.repeatedly().schedule();
-
     fieldOrientedDriveCommand = new FieldOrientedDriveCommand(
         drivetrainSubsystem,
-        () -> poseEstimator.getCurrentPose().getRotation(),
+        () -> drivetrainSubsystem.getCurrentPose().getRotation(),
         controlBindings.translationX(),
         controlBindings.translationY(),
         controlBindings.omega());
@@ -80,13 +74,13 @@ public class RobotContainer {
     /**** Vision tab ****/
     final var visionTab = Shuffleboard.getTab("Vision");
 
-    // Pose estimation
-    poseEstimator.addDashboardWidgets(visionTab);
+    // Drivetrain / pose
+    drivetrainSubsystem.addDashboardWidgets(visionTab);
   }
 
   private void configureButtonBindings() {
     // reset the robot pose
-    controlBindings.resetPose().ifPresent(trigger -> trigger.onTrue(runOnce(poseEstimator::resetFieldPosition)));
+    controlBindings.resetPose().ifPresent(trigger -> trigger.onTrue(runOnce(drivetrainSubsystem::resetFieldPosition)));
 
     // POV Right to put the wheels in an X until the driver tries to drive
     controlBindings.wheelsToX()
@@ -118,7 +112,7 @@ public class RobotContainer {
    * @param alliance new alliance value
    */
   public void onAllianceChanged(Alliance alliance) {
-    poseEstimator.setAlliance(alliance);
+    drivetrainSubsystem.setAlliance(alliance);
   }
 
 }
