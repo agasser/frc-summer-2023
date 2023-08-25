@@ -7,6 +7,7 @@ import static frc.robot.Constants.DrivetrainConstants.DRIVE_kD;
 import static frc.robot.Constants.DrivetrainConstants.DRIVE_kI;
 import static frc.robot.Constants.DrivetrainConstants.DRIVE_kP;
 
+import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
@@ -50,18 +51,21 @@ public class SwerveSpeedController {
     CtreUtils.checkCtreError(motor.getConfigurator().apply(motorConfiguration), "Failed to configure Falcon 500", port);
     CtreUtils.checkCtreError(motor.getConfigurator().apply(slot0Configs), "Failed to configure Falcon 500 slot 0", port);
     motor.setSafetyEnabled(true);
-    velocitySignal = motor.getVelocity();
-    positionSignal = motor.getPosition();
+    velocitySignal = motor.getVelocity().clone();
+    positionSignal = motor.getPosition().clone();
+
+    // Make request signal synchronous
+    velocityFOCRequest.UpdateFreqHz = 0.0;
     
     addDashboardEntries(container);
   }
 
   private void addDashboardEntries(ShuffleboardContainer container) {
     if (container != null) {
-      container.addNumber("Current Velocity", () -> getStateVelocity()).withPosition(0, 0);
+      container.addNumber("Current Velocity", () -> getStateVelocity(false)).withPosition(0, 0);
       container.addNumber("Target Velocity", () -> velocityFOCRequest.Velocity * metersPerRevolution)
           .withPosition(0, 1);
-      container.addNumber("Current Position", () -> getStatePosition()).withPosition(0, 2);
+      container.addNumber("Current Position", () -> getStatePosition(false)).withPosition(0, 2);
     }
   }
 
@@ -73,16 +77,23 @@ public class SwerveSpeedController {
    * Returns velocity in meters per second
    * @return drive velocity in meters per second
    */
-  public double getStateVelocity() {
-    return velocitySignal.refresh().getValue() * metersPerRevolution;
+  public double getStateVelocity(boolean refresh) {
+    if (refresh) {
+      velocitySignal.refresh();
+    }
+    return velocitySignal.getValue() * metersPerRevolution;
   }
 
   /**
    * Returns position in meters
    * @return position in meters
    */
-  public double getStatePosition() {
-    return positionSignal.refresh().getValue() * metersPerRevolution;
+  public double getStatePosition(boolean refresh) {
+    if (refresh) {
+      positionSignal.refresh();
+      velocitySignal.refresh();
+    }
+    return BaseStatusSignal.getLatencyCompensatedValue(positionSignal, velocitySignal) * metersPerRevolution;
   }
 
   /**
@@ -91,6 +102,10 @@ public class SwerveSpeedController {
    */
   public void setBrakeMode(boolean brakeMode) {
     velocityFOCRequest.OverrideCoastDurNeutral = !brakeMode;
+  }
+
+  public BaseStatusSignal[] getSignals() {
+    return new BaseStatusSignal[] {positionSignal, velocitySignal};
   }
 
 }

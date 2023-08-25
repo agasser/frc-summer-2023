@@ -10,6 +10,7 @@ import static frc.robot.Constants.DrivetrainConstants.STEER_kI;
 import static frc.robot.Constants.DrivetrainConstants.STEER_kP;
 import static frc.robot.Constants.DrivetrainConstants.STEER_kV;
 
+import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
@@ -32,6 +33,7 @@ public class SwerveSteerController {
   
   private final MotionMagicVoltage motionMagicVoltageRequest = new MotionMagicVoltage(0);
   private final StatusSignal<Double> motorPositionSignal;
+  private final StatusSignal<Double> motorVelocitySignal;
 
   public SwerveSteerController(
       int motorPort,
@@ -51,10 +53,6 @@ public class SwerveSteerController {
     CtreUtils.checkCtreError(
         encoder.getConfigurator().apply(cancoderConfig), 
         "Failed to configure CANCoder", canCoderPort);
-    
-    CtreUtils.checkCtreError(
-      encoder.getAbsolutePosition().setUpdateFrequency(100), 
-        "Failed to configure CANCoder update rate", canCoderPort);
 
     var motorConfiguration = new TalonFXConfiguration();
     motorConfiguration.MotorOutput.NeutralMode = NeutralModeValue.Coast;
@@ -83,14 +81,18 @@ public class SwerveSteerController {
     CtreUtils.checkCtreError(motor.getConfigurator().apply(motorConfiguration),
         "Failed to configure Falcon 500", motorPort);
 
-    motorPositionSignal = motor.getPosition();
-    motorPositionSignal.setUpdateFrequency(100.0);
+    motorPositionSignal = motor.getPosition().clone();
+    motorVelocitySignal = motor.getVelocity().clone();
+
+    // Make request signal synchronous
+    motionMagicVoltageRequest.UpdateFreqHz = 0.0;
+
     addDashboardEntries(container);
   }
 
   private void addDashboardEntries(ShuffleboardContainer container) {
     if (container != null) {
-      container.addNumber("Motor Angle", () -> getStateRotation().getRadians()).withPosition(0, 3);
+      container.addNumber("Motor Angle", () -> getStateRotation(false).getRadians()).withPosition(0, 3);
       container.addNumber("Target Angle", () -> rotationsToRadians(motionMagicVoltageRequest.Position))
           .withPosition(0, 4);
       container.addNumber("Encoder Angle", () -> rotationsToRadians(encoder.getAbsolutePosition().getValue()))
@@ -110,8 +112,12 @@ public class SwerveSteerController {
    * Gets the current wheel rotation
    * @return Range is [-.5, .5] radians
    */
-  public Rotation2d getStateRotation() {
-    var position = motorPositionSignal.refresh().getValue();
+  public Rotation2d getStateRotation(boolean refresh) {
+    if (refresh) {
+      motorPositionSignal.refresh();
+      motorVelocitySignal.refresh();
+    }
+    var position = BaseStatusSignal.getLatencyCompensatedValue(motorPositionSignal, motorVelocitySignal);
     return Rotation2d.fromRotations(Math.IEEEremainder(position, 1));
   }
 
@@ -121,6 +127,10 @@ public class SwerveSteerController {
    */
   public void setBrakeMode(boolean brakeMode) {
     motionMagicVoltageRequest.OverrideBrakeDurNeutral = brakeMode;
+  }
+
+  public BaseStatusSignal[] getSignals() {
+    return new BaseStatusSignal[] {motorPositionSignal, motorVelocitySignal};
   }
 
 }

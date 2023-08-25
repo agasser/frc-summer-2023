@@ -100,13 +100,6 @@ public class RobotContainer {
     return autoBuilder.getAutonomousCommand();
   }
 
-  public void disabledPeriodic() {
-    // Reseed the motor offset continuously when the robot is disabled to help solve dead wheel issue
-    // if (reseedTimer.advanceIfElapsed(1.0)) {
-    //   drivetrainSubsystem.reseedSteerMotorOffsets();
-    // }
-  }
-
   /**
    * Called when the alliance reported by the driverstation/FMS changes.
    * @param alliance new alliance value

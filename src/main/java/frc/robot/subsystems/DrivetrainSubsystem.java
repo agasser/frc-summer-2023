@@ -27,22 +27,23 @@ import static frc.robot.Constants.DrivetrainConstants.FRONT_RIGHT_MODULE_DRIVE_M
 import static frc.robot.Constants.DrivetrainConstants.FRONT_RIGHT_MODULE_STEER_ENCODER;
 import static frc.robot.Constants.DrivetrainConstants.FRONT_RIGHT_MODULE_STEER_MOTOR;
 import static frc.robot.Constants.DrivetrainConstants.FRONT_RIGHT_MODULE_STEER_OFFSET;
+import static frc.robot.Constants.DrivetrainConstants.KINEMATICS;
 import static frc.robot.Constants.DrivetrainConstants.PIGEON_ID;
 import static frc.robot.Constants.VisionConstants.APRILTAG_CAMERA_NAME;
 
 import java.util.Arrays;
 import java.util.Map;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
-import com.ctre.phoenix6.configs.Pigeon2Configuration;
+import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.hardware.Pigeon2;
 import com.pathplanner.lib.PathPlannerTrajectory;
 import com.pathplanner.lib.commands.PPSwerveControllerCommand;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout.OriginPosition;
-import edu.wpi.first.math.VecBuilder;
-import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
@@ -52,7 +53,6 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
-import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
@@ -78,44 +78,72 @@ import frc.robot.swerve.SwerveSpeedController;
 import frc.robot.swerve.SwerveSteerController;
 
 public class DrivetrainSubsystem extends SubsystemBase {
-
+  private static final double UPDATE_FREQUENCY = 250d;
+  private static final NetworkTable moduleStatesTable = NetworkTableInstance.getDefault().getTable("SwerveStates");
+  private final SwerveDrivePoseEstimator poseEstimator;
   private final Pigeon2 pigeon = new Pigeon2(PIGEON_ID, CANIVORE_BUS_NAME);
   private final SwerveModule[] swerveModules;
-
-  /**
-   * Standard deviations of model states. Increase these numbers to trust your model's state estimates less. This
-   * matrix is in the form [x, y, theta]ᵀ, with units in meters and radians, then meters.
-   */
-  private static final Vector<N3> stateStdDevs = VecBuilder.fill(0.1, 0.1, 0.1);
-
-  /**
-   * Standard deviations of the vision measurements. Increase these numbers to trust global measurements from vision
-   * less. This matrix is in the form [x, y, theta]ᵀ, with units in meters and radians.
-   */
-  private static final Vector<N3> visionMeasurementStdDevs = VecBuilder.fill(1.5, 1.5, 1.5);
-
-  private final SwerveDrivePoseEstimator poseEstimator;
-
   private final Field2d field2d = new Field2d();
   private final PhotonRunnable photonEstimator = new PhotonRunnable(APRILTAG_CAMERA_NAME);
   private final Notifier photonNotifier = new Notifier(photonEstimator);
+  private final OdometryThread odometryThread;
+  private final ReadWriteLock odometryLock = new ReentrantReadWriteLock();
 
   private OriginPosition originPosition = kBlueAllianceWallRightSide;
   private boolean sawTag = false;
 
-  private static final NetworkTable moduleStatesTable = NetworkTableInstance.getDefault().getTable("SwerveStates");
-
   private ChassisSpeeds desiredChassisSpeeds;
+
+  private class OdometryThread extends Thread {
+    private final BaseStatusSignal[] statusSignals = new BaseStatusSignal[swerveModules.length * 4 + 2];
+
+    public OdometryThread() {
+      for (int i = 0; i < swerveModules.length; i++) {
+        var moduleSignals = swerveModules[i].getSignals();
+        statusSignals[(i * 4) + 0] = moduleSignals[0];
+        statusSignals[(i * 4) + 1] = moduleSignals[1];
+        statusSignals[(i * 4) + 2] = moduleSignals[2];
+        statusSignals[(i * 4) + 3] = moduleSignals[3];
+      }
+      statusSignals[statusSignals.length - 2] = pigeon.getYaw().clone();
+      statusSignals[statusSignals.length - 1] = pigeon.getAccelerationZ().clone();
+    }
+
+    @Override
+    public void run() {
+      for (int i = 0; i < statusSignals.length; i++) {
+        statusSignals[i].setUpdateFrequency(UPDATE_FREQUENCY);
+      }
+
+      while(true) {
+
+        BaseStatusSignal.waitForAll(UPDATE_FREQUENCY * 2.0, statusSignals);
+        odometryLock.writeLock().lock();
+        try {
+
+          // Update pose estimator with drivetrain sensors
+          poseEstimator.update(getGyroscopeRotation(), getModulePositions());
+    
+          var visionPose = photonEstimator.grabLatestEstimatedPose();
+          if (visionPose != null) {
+            // New pose from vision
+            sawTag = true;
+            var pose2d = visionPose.estimatedPose.toPose2d();
+            if (originPosition != kBlueAllianceWallRightSide) {
+              pose2d = flipAlliance(pose2d);
+            }
+            poseEstimator.addVisionMeasurement(pose2d, visionPose.timestampSeconds);
+          }
+        } finally {
+          odometryLock.writeLock().unlock();
+        }
+      }
+    }
+  }
 
   public DrivetrainSubsystem() {
     ShuffleboardTab tab = Shuffleboard.getTab("Drivetrain");
     
-    var pigeonConfig = new Pigeon2Configuration();
-    pigeonConfig.MountPose.MountPoseYaw = 0;
-    pigeonConfig.MountPose.MountPosePitch = 0;
-    pigeonConfig.MountPose.MountPoseRoll = 0;
-    pigeon.getConfigurator().apply(pigeonConfig);
-
     ShuffleboardLayout frontLeftLayout = null;
     ShuffleboardLayout frontRightLayout = null;
     ShuffleboardLayout backLeftLayout = null;
@@ -182,12 +210,14 @@ public class DrivetrainSubsystem extends SubsystemBase {
            .onFalse(runOnce(() -> setBrakeMode(false)).ignoringDisable(true));
   
       poseEstimator =  new SwerveDrivePoseEstimator(
-          DrivetrainConstants.KINEMATICS,
+          KINEMATICS,
           getGyroscopeRotation(),
           getModulePositions(),
-          new Pose2d(),
-          stateStdDevs,
-          visionMeasurementStdDevs);
+          new Pose2d());
+      
+      odometryThread = new OdometryThread();
+      odometryThread.setName("Drivetrain Odometry");
+      odometryThread.start();
         
       // Start PhotonVision thread
       photonNotifier.setName("PhotonRunnable");
@@ -222,13 +252,18 @@ public class DrivetrainSubsystem extends SubsystemBase {
       // The alliance changed, which changes the coordinate system.
       // Since a tag was seen, and the tags are all relative to the coordinate system, the estimated pose
       // needs to be transformed to the new coordinate system.
-      var newPose = flipAlliance(getCurrentPose());
-      poseEstimator.resetPosition(getGyroscopeRotation(), getModulePositions(), newPose);
+      odometryLock.writeLock().lock();
+      try {
+        var newPose = flipAlliance(getCurrentPose());
+        poseEstimator.resetPosition(getGyroscopeRotation(), getModulePositions(), newPose);
+      } finally {
+        odometryLock.writeLock().unlock();
+      }
     }
   }
 
   /**
-   * Creates a server module instance
+   * Creates a swerve module instance
    * @param container shuffleboard layout, or null
    * @param moduleConfiguration module configuration
    * @param driveMotorPort drive motor CAN ID
@@ -250,8 +285,9 @@ public class DrivetrainSubsystem extends SubsystemBase {
         new SwerveSteerController(steerMotorPort, steerEncoderPort, steerOffset, container, moduleConfiguration));
   }
 
-  public Rotation2d getGyroscopeRotation() {
-    return pigeon.getRotation2d();
+  private Rotation2d getGyroscopeRotation() {
+    return Rotation2d.fromDegrees(
+        BaseStatusSignal.getLatencyCompensatedValue(pigeon.getYaw(), pigeon.getAngularVelocityZ()));
   }
 
   /**
@@ -291,28 +327,13 @@ public class DrivetrainSubsystem extends SubsystemBase {
    * @return actual chassis speeds
    */
   public ChassisSpeeds getChassisSpeeds() {
-    return DrivetrainConstants.KINEMATICS.toChassisSpeeds(getModuleStates());
+    return KINEMATICS.toChassisSpeeds(getModuleStates());
   }
 
   @Override
   public void periodic() {
-    
-    // Update pose estimator with drivetrain sensors
-    poseEstimator.update(getGyroscopeRotation(), getModulePositions());
-
-    var visionPose = photonEstimator.grabLatestEstimatedPose();
-    if (visionPose != null) {
-      // New pose from vision
-      sawTag = true;
-      var pose2d = visionPose.estimatedPose.toPose2d();
-      if (originPosition != kBlueAllianceWallRightSide) {
-        pose2d = flipAlliance(pose2d);
-      }
-      poseEstimator.addVisionMeasurement(pose2d, visionPose.timestampSeconds);
-    }
-
     // Set the pose on the dashboard
-    var dashboardPose = poseEstimator.getEstimatedPosition();
+    var dashboardPose = getCurrentPose();
     if (originPosition == kRedAllianceWallRightSide) {
       // Flip the pose when red, since the dashboard field photo cannot be rotated
       dashboardPose = flipAlliance(dashboardPose);
@@ -321,24 +342,23 @@ public class DrivetrainSubsystem extends SubsystemBase {
 
     // Set the swerve module states
     if (desiredChassisSpeeds != null) {
-      var desiredStates = DrivetrainConstants.KINEMATICS.toSwerveModuleStates(desiredChassisSpeeds);
-      SwerveDriveKinematics.desaturateWheelSpeeds(desiredStates, DrivetrainConstants.MAX_VELOCITY_METERS_PER_SECOND);
-      setModuleStates(desiredStates);
+      setModuleStates(KINEMATICS.toSwerveModuleStates(desiredChassisSpeeds));
     }
+
     // Module states for Advantage Scope
     if (DrivetrainConstants.ADD_TO_DASHBOARD) {
       double[] moduleStateArray = new double[swerveModules.length * 2];
       for (int i = 0; i < swerveModules.length; i ++) {
         var module = swerveModules[i];
-        moduleStateArray[i * 2] = module.getSteerAngle().getRadians();
-        moduleStateArray[(i * 2) + 1] = module.getDriveVelocity();
+        moduleStateArray[i * 2] = module.getSteerAngle(false).getRadians();
+        moduleStateArray[(i * 2) + 1] = module.getDriveVelocity(false);
       }
       moduleStatesTable.getEntry("Measured").setDoubleArray(moduleStateArray);
       moduleStatesTable.getEntry("Rotation").setDouble(dashboardPose.getRotation().getRadians());
     }
+
     // Always reset desiredChassisSpeeds to null to prevent latching to the last state (aka motor safety)!!
     desiredChassisSpeeds = null;
-
   }
 
   private String getFomattedPose() {
@@ -350,7 +370,12 @@ public class DrivetrainSubsystem extends SubsystemBase {
   }
 
   public Pose2d getCurrentPose() {
-    return poseEstimator.getEstimatedPosition();
+    odometryLock.readLock().lock();
+    try {
+      return poseEstimator.getEstimatedPosition();
+    } finally {
+      odometryLock.readLock().unlock();
+    }
   }
   
   /**
@@ -360,7 +385,12 @@ public class DrivetrainSubsystem extends SubsystemBase {
    * @param newPose new pose
    */
   public void setCurrentPose(Pose2d newPose) {
-    poseEstimator.resetPosition(getGyroscopeRotation(), getModulePositions(), newPose);
+    odometryLock.writeLock().lock();
+    try {
+      poseEstimator.resetPosition(getGyroscopeRotation(), getModulePositions(), newPose);
+    } finally {
+      odometryLock.writeLock().unlock();
+    }
   }
 
   /**
@@ -386,15 +416,15 @@ public class DrivetrainSubsystem extends SubsystemBase {
    * @return current drivetrain state. Array orders are frontLeft, frontRight, backLeft, backRight
    */
   private SwerveModuleState[] getModuleStates() {
-    return Arrays.stream(swerveModules).map(module -> module.getState()).toArray(SwerveModuleState[]::new);
+    return Arrays.stream(swerveModules).map(module -> module.getState(false)).toArray(SwerveModuleState[]::new);
   }
 
   /**
    * Gets the current drivetrain position, as reported by the modules themselves.
    * @return current drivetrain state. Array orders are frontLeft, frontRight, backLeft, backRight
    */
-  public SwerveModulePosition[] getModulePositions() {
-    return Arrays.stream(swerveModules).map(module -> module.getPosition()).toArray(SwerveModulePosition[]::new);
+  private SwerveModulePosition[] getModulePositions() {
+    return Arrays.stream(swerveModules).map(module -> module.getPosition(false)).toArray(SwerveModulePosition[]::new);
   }
 
   /**
@@ -403,9 +433,10 @@ public class DrivetrainSubsystem extends SubsystemBase {
    */
   public void setModuleStates(SwerveModuleState[] states) {
     double[] moduleSetpointArray = new double[states.length * 2];
+    SwerveDriveKinematics.desaturateWheelSpeeds(states, DrivetrainConstants.MAX_VELOCITY_METERS_PER_SECOND);
     IntStream.range(0, swerveModules.length).forEach(i -> {
       var swerveModule = swerveModules[i];
-      var desiredState = SwerveModuleState.optimize(states[i], swerveModule.getSteerAngle());
+      var desiredState = SwerveModuleState.optimize(states[i], swerveModule.getSteerAngle(false));
       swerveModule.setDesiredState(desiredState);
       
       // Module setpoints for Advantage Scope
@@ -433,7 +464,7 @@ public class DrivetrainSubsystem extends SubsystemBase {
         new SwerveControllerCommand(
             trajectory,
             poseSupplier,
-            DrivetrainConstants.KINEMATICS,
+            KINEMATICS,
             new PIDController(TRANSLATION_kP, TRANSLATION_kI, TRANSLATION_kD),
             new PIDController(TRANSLATION_kP, TRANSLATION_kI, TRANSLATION_kD),
             thetaController,
@@ -452,7 +483,7 @@ public class DrivetrainSubsystem extends SubsystemBase {
     var ppSwerveCommand = new PPSwerveControllerCommand(
       trajectory, 
       poseSupplier,
-      DrivetrainConstants.KINEMATICS,
+      KINEMATICS,
       new PIDController(TRANSLATION_kP, TRANSLATION_kI, TRANSLATION_kD),
       new PIDController(TRANSLATION_kP, TRANSLATION_kI, TRANSLATION_kD),
       thetaController,
@@ -464,7 +495,7 @@ public class DrivetrainSubsystem extends SubsystemBase {
     return ppSwerveCommand;
   }
 
-  public void setBrakeMode(boolean brakeMode) {
+  private void setBrakeMode(boolean brakeMode) {
     for (SwerveModule swerveModule : swerveModules) {
       swerveModule.setBrakeMode(brakeMode);
     }
