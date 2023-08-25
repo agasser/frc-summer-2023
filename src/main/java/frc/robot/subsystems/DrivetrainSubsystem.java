@@ -117,22 +117,27 @@ public class DrivetrainSubsystem extends SubsystemBase {
 
       while(true) {
 
+        // Update drivetrain sensor data
         BaseStatusSignal.waitForAll(UPDATE_FREQUENCY * 2.0, statusSignals);
+
+        // Check for vision measurement
+        var visionPose = photonEstimator.grabLatestEstimatedPose();
+        Pose2d visionPose2d = null;
+        if (visionPose != null) {
+          // New pose from vision
+          sawTag = true;
+          visionPose2d = visionPose.estimatedPose.toPose2d();
+          if (originPosition != kBlueAllianceWallRightSide) {
+            visionPose2d = flipAlliance(visionPose2d);
+          }
+        }
+
         odometryLock.writeLock().lock();
         try {
-
-          // Update pose estimator with drivetrain sensors
+          // Update pose estimator
           poseEstimator.update(getGyroscopeRotation(), getModulePositions());
-    
-          var visionPose = photonEstimator.grabLatestEstimatedPose();
-          if (visionPose != null) {
-            // New pose from vision
-            sawTag = true;
-            var pose2d = visionPose.estimatedPose.toPose2d();
-            if (originPosition != kBlueAllianceWallRightSide) {
-              pose2d = flipAlliance(pose2d);
-            }
-            poseEstimator.addVisionMeasurement(pose2d, visionPose.timestampSeconds);
+          if (visionPose2d != null) {
+            poseEstimator.addVisionMeasurement(visionPose2d, visionPose.timestampSeconds);
           }
         } finally {
           odometryLock.writeLock().unlock();
