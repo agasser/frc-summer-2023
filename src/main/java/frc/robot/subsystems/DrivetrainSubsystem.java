@@ -118,7 +118,7 @@ public class DrivetrainSubsystem extends SubsystemBase {
       while(true) {
 
         // Update drivetrain sensor data
-        BaseStatusSignal.waitForAll(UPDATE_FREQUENCY * 2.0, statusSignals);
+        BaseStatusSignal.waitForAll(2.0 / UPDATE_FREQUENCY, statusSignals);
 
         // Check for vision measurement
         var visionPose = photonEstimator.grabLatestEstimatedPose();
