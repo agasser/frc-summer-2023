@@ -90,8 +90,7 @@ public class SwerveSpeedController {
    */
   public double getStatePosition(boolean refresh) {
     if (refresh) {
-      positionSignal.refresh();
-      velocitySignal.refresh();
+      BaseStatusSignal.refreshAll(positionSignal, velocitySignal);
     }
     return BaseStatusSignal.getLatencyCompensatedValue(positionSignal, velocitySignal) * metersPerRevolution;
   }

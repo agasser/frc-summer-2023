@@ -114,8 +114,7 @@ public class SwerveSteerController {
    */
   public Rotation2d getStateRotation(boolean refresh) {
     if (refresh) {
-      motorPositionSignal.refresh();
-      motorVelocitySignal.refresh();
+      BaseStatusSignal.refreshAll(motorPositionSignal, motorVelocitySignal);
     }
     var position = BaseStatusSignal.getLatencyCompensatedValue(motorPositionSignal, motorVelocitySignal);
     return Rotation2d.fromRotations(Math.IEEEremainder(position, 1));
