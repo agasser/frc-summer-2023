@@ -222,6 +222,7 @@ public class DrivetrainSubsystem extends SubsystemBase {
       
       odometryThread = new OdometryThread();
       odometryThread.setName("Drivetrain Odometry");
+      odometryThread.setDaemon(true);
       odometryThread.start();
         
       // Start PhotonVision thread
