@@ -57,7 +57,6 @@ import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
-import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.RobotState;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
@@ -84,8 +83,7 @@ public class DrivetrainSubsystem extends SubsystemBase {
   private final Pigeon2 pigeon = new Pigeon2(PIGEON_ID, CANIVORE_BUS_NAME);
   private final SwerveModule[] swerveModules;
   private final Field2d field2d = new Field2d();
-  private final PhotonRunnable photonEstimator = new PhotonRunnable(APRILTAG_CAMERA_NAME);
-  private final Notifier photonNotifier = new Notifier(photonEstimator);
+  private final Thread photonThread = new Thread(new PhotonRunnable(APRILTAG_CAMERA_NAME, this::addVisionMeasurement));
   private final OdometryThread odometryThread;
   private final ReadWriteLock odometryLock = new ReentrantReadWriteLock();
 
@@ -116,29 +114,11 @@ public class DrivetrainSubsystem extends SubsystemBase {
       }
 
       while(true) {
-
         // Update drivetrain sensor data
         BaseStatusSignal.waitForAll(2.0 / UPDATE_FREQUENCY, statusSignals);
-
-        // Check for vision measurement
-        var visionPose = photonEstimator.grabLatestEstimatedPose();
-        Pose2d visionPose2d = null;
-        if (visionPose != null) {
-          // New pose from vision
-          sawTag = true;
-          visionPose2d = visionPose.estimatedPose.toPose2d();
-          if (originPosition != kBlueAllianceWallRightSide) {
-            visionPose2d = flipAlliance(visionPose2d);
-          }
-        }
-
         odometryLock.writeLock().lock();
         try {
-          // Update pose estimator
           poseEstimator.update(getGyroscopeRotation(), getModulePositions());
-          if (visionPose2d != null) {
-            poseEstimator.addVisionMeasurement(visionPose2d, visionPose.timestampSeconds);
-          }
         } finally {
           odometryLock.writeLock().unlock();
         }
@@ -226,8 +206,8 @@ public class DrivetrainSubsystem extends SubsystemBase {
       odometryThread.start();
         
       // Start PhotonVision thread
-      photonNotifier.setName("PhotonRunnable");
-      photonNotifier.startPeriodic(.02);
+      photonThread.setName("PhotonVision");
+      photonThread.start();
   }
 
   public void addDashboardWidgets(ShuffleboardTab tab) {
@@ -265,6 +245,28 @@ public class DrivetrainSubsystem extends SubsystemBase {
       } finally {
         odometryLock.writeLock().unlock();
       }
+    }
+  }
+
+  /**
+   * Add a vision measurement. Call this with a pose estimate from an AprilTag.
+   * @param pose2d Pose estimate based on the vision target (AprilTag)
+   * @param timestamp timestamp when the target was seen
+   */
+  public void addVisionMeasurement(Pose2d pose2d, double timestamp) {
+    sawTag = true;
+    var visionPose2d = pose2d;
+    if (originPosition != kBlueAllianceWallRightSide) {
+      visionPose2d = flipAlliance(visionPose2d);
+    }
+    odometryLock.writeLock().lock();
+    try {
+      // Update pose estimator
+      if (pose2d != null) {
+        poseEstimator.addVisionMeasurement(visionPose2d, timestamp);
+      }
+    } finally {
+      odometryLock.writeLock().unlock();
     }
   }
 
