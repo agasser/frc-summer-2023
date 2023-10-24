@@ -7,11 +7,20 @@ package frc.robot;
 import static edu.wpi.first.wpilibj2.command.Commands.run;
 import static edu.wpi.first.wpilibj2.command.Commands.runOnce;
 
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.commands.PathPlannerAuto;
+import com.pathplanner.lib.util.HolonomicPathFollowerConfig;
+import com.pathplanner.lib.util.PIDConstants;
+import com.pathplanner.lib.util.ReplanningConfig;
+
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import frc.robot.Constants.AutoDriveConstants;
+import frc.robot.Constants.DrivetrainConstants;
 import frc.robot.commands.FieldOrientedDriveCommand;
 import frc.robot.controls.ControlBindings;
 import frc.robot.controls.JoystickControlBindings;
@@ -32,15 +41,27 @@ public class RobotContainer {
   
   private final FieldOrientedDriveCommand fieldOrientedDriveCommand;
 
-  private final Timer reseedTimer = new Timer();
-
-  private final AutonomousBuilder autoBuilder =
-      new AutonomousBuilder(drivetrainSubsystem, drivetrainSubsystem::getCurrentPose, drivetrainSubsystem::setCurrentPose);
-  
   /**
    * The container for the robot. Contains subsystems, OI devices, and commands.
    */
   public RobotContainer() {
+
+    AutoBuilder.configureHolonomic(
+        drivetrainSubsystem::getCurrentPose,
+        drivetrainSubsystem::setCurrentPose,
+        drivetrainSubsystem::getChassisSpeeds,
+        drivetrainSubsystem::drive,
+        new HolonomicPathFollowerConfig(
+            new PIDConstants(AutoDriveConstants.TRANSLATION_kP, AutoDriveConstants.TRANSLATION_kI,
+                AutoDriveConstants.TRANSLATION_kD),
+            new PIDConstants(AutoDriveConstants.THETA_kP, AutoDriveConstants.THETA_kI, AutoDriveConstants.THETA_kD),
+            DrivetrainConstants.MAX_VELOCITY_METERS_PER_SECOND,
+            new Translation2d(DrivetrainConstants.DRIVETRAIN_WHEELBASE_METERS / 2.0,
+                DrivetrainConstants.DRIVETRAIN_TRACKWIDTH_METERS / 2.0).getNorm(),
+            new ReplanningConfig()),
+        drivetrainSubsystem);
+
+
     // Configure control binding scheme
     if (DriverStation.getJoystickIsXbox(0)) {
       controlBindings = new XBoxControlBindings();
@@ -58,7 +79,6 @@ public class RobotContainer {
     configureDefaultCommands();
     configureButtonBindings();
     configureDashboard();
-    reseedTimer.start();
   }
 
   private void configureDefaultCommands() {
@@ -67,10 +87,8 @@ public class RobotContainer {
   }
 
   private void configureDashboard() {
-    /**** Driver tab ****/
-    var driverTab = Shuffleboard.getTab("Driver");
-    autoBuilder.addDashboardWidgets(driverTab);
-    
+    SmartDashboard.putData("Drivetrain", drivetrainSubsystem);
+
     /**** Vision tab ****/
     final var visionTab = Shuffleboard.getTab("Vision");
 
@@ -97,7 +115,7 @@ public class RobotContainer {
    * @return the command to run in autonomous
    */
   public Command getAutonomousCommand() {
-    return autoBuilder.getAutonomousCommand();
+    return new PathPlannerAuto("Test Auto");
   }
 
   /**

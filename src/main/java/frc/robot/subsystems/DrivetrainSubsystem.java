@@ -6,10 +6,6 @@ package frc.robot.subsystems;
 
 import static edu.wpi.first.apriltag.AprilTagFieldLayout.OriginPosition.kBlueAllianceWallRightSide;
 import static edu.wpi.first.apriltag.AprilTagFieldLayout.OriginPosition.kRedAllianceWallRightSide;
-import static frc.robot.Constants.AutoDriveConstants.THETA_CONSTRAINTS;
-import static frc.robot.Constants.AutoDriveConstants.TRANSLATION_kD;
-import static frc.robot.Constants.AutoDriveConstants.TRANSLATION_kI;
-import static frc.robot.Constants.AutoDriveConstants.TRANSLATION_kP;
 import static frc.robot.Constants.DrivetrainConstants.BACK_LEFT_MODULE_DRIVE_MOTOR;
 import static frc.robot.Constants.DrivetrainConstants.BACK_LEFT_MODULE_STEER_ENCODER;
 import static frc.robot.Constants.DrivetrainConstants.BACK_LEFT_MODULE_STEER_MOTOR;
@@ -29,23 +25,17 @@ import static frc.robot.Constants.DrivetrainConstants.FRONT_RIGHT_MODULE_STEER_M
 import static frc.robot.Constants.DrivetrainConstants.FRONT_RIGHT_MODULE_STEER_OFFSET;
 import static frc.robot.Constants.DrivetrainConstants.KINEMATICS;
 import static frc.robot.Constants.DrivetrainConstants.PIGEON_ID;
-import static frc.robot.Constants.VisionConstants.APRILTAG_CAMERA_NAME;
 
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.hardware.Pigeon2;
-import com.pathplanner.lib.PathPlannerTrajectory;
-import com.pathplanner.lib.commands.PPSwerveControllerCommand;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout.OriginPosition;
-import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -53,7 +43,6 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
-import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
@@ -63,14 +52,10 @@ import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardLayout;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
-import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
-import frc.robot.Constants.AutoDriveConstants;
 import frc.robot.Constants.DrivetrainConstants;
 import frc.robot.Constants.VisionConstants;
-import frc.robot.commands.PhotonRunnable;
 import frc.robot.swerve.ModuleConfiguration;
 import frc.robot.swerve.SwerveModule;
 import frc.robot.swerve.SwerveSpeedController;
@@ -83,7 +68,6 @@ public class DrivetrainSubsystem extends SubsystemBase {
   private final Pigeon2 pigeon = new Pigeon2(PIGEON_ID, CANIVORE_BUS_NAME);
   private final SwerveModule[] swerveModules;
   private final Field2d field2d = new Field2d();
-  private final Thread photonThread = new Thread(new PhotonRunnable(APRILTAG_CAMERA_NAME, this::addVisionMeasurement));
   private final OdometryThread odometryThread;
   private final ReadWriteLock odometryLock = new ReentrantReadWriteLock();
 
@@ -205,9 +189,6 @@ public class DrivetrainSubsystem extends SubsystemBase {
       odometryThread.setDaemon(true);
       odometryThread.start();
         
-      // Start PhotonVision thread
-      photonThread.setName("PhotonVision");
-      photonThread.start();
   }
 
   public void addDashboardWidgets(ShuffleboardTab tab) {
@@ -456,51 +437,6 @@ public class DrivetrainSubsystem extends SubsystemBase {
     if (DrivetrainConstants.ADD_TO_DASHBOARD) {
       moduleStatesTable.getEntry("Setpoints").setDoubleArray(moduleSetpointArray);
     }
-  }
-
-  /**
-   * Creates a command to follow a Trajectory on the drivetrain.
-   * @param trajectory trajectory to follow
-   * @return command that will run the trajectory
-   */
-  public Command createCommandForTrajectory(Trajectory trajectory, Supplier<Pose2d> poseSupplier) {
-    var thetaController = new ProfiledPIDController(
-        AutoDriveConstants.THETA_kP, AutoDriveConstants.THETA_kI, AutoDriveConstants.THETA_kD, THETA_CONSTRAINTS);
-    thetaController.enableContinuousInput(-Math.PI, Math.PI);
-
-    SwerveControllerCommand swerveControllerCommand =
-        new SwerveControllerCommand(
-            trajectory,
-            poseSupplier,
-            KINEMATICS,
-            new PIDController(TRANSLATION_kP, TRANSLATION_kI, TRANSLATION_kD),
-            new PIDController(TRANSLATION_kP, TRANSLATION_kI, TRANSLATION_kD),
-            thetaController,
-            this::setModuleStates,
-            this);
-            
-      return swerveControllerCommand;
-  }
-
-  public Command createCommandForTrajectory(
-        PathPlannerTrajectory trajectory, Supplier<Pose2d> poseSupplier, boolean useAllianceColor) {
-          
-    var thetaController = new PIDController(AutoDriveConstants.THETA_kP, AutoDriveConstants.THETA_kI, AutoDriveConstants.THETA_kD);
-    thetaController.enableContinuousInput(-Math.PI, Math.PI);
-    
-    var ppSwerveCommand = new PPSwerveControllerCommand(
-      trajectory, 
-      poseSupplier,
-      KINEMATICS,
-      new PIDController(TRANSLATION_kP, TRANSLATION_kI, TRANSLATION_kD),
-      new PIDController(TRANSLATION_kP, TRANSLATION_kI, TRANSLATION_kD),
-      thetaController,
-      this::setModuleStates,
-      useAllianceColor,
-      this
-    );
-
-    return ppSwerveCommand;
   }
 
   private void setBrakeMode(boolean brakeMode) {
