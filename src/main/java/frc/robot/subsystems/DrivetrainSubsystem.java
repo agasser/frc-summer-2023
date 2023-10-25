@@ -25,6 +25,7 @@ import static frc.robot.Constants.DrivetrainConstants.FRONT_RIGHT_MODULE_STEER_M
 import static frc.robot.Constants.DrivetrainConstants.FRONT_RIGHT_MODULE_STEER_OFFSET;
 import static frc.robot.Constants.DrivetrainConstants.KINEMATICS;
 import static frc.robot.Constants.DrivetrainConstants.PIGEON_ID;
+import static frc.robot.Constants.VisionConstants.APRILTAG_CAMERA_NAME;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -52,10 +53,12 @@ import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardLayout;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants.DrivetrainConstants;
 import frc.robot.Constants.VisionConstants;
+import frc.robot.commands.PhotonRunnable;
 import frc.robot.swerve.ModuleConfiguration;
 import frc.robot.swerve.SwerveModule;
 import frc.robot.swerve.SwerveSpeedController;
@@ -68,6 +71,7 @@ public class DrivetrainSubsystem extends SubsystemBase {
   private final Pigeon2 pigeon = new Pigeon2(PIGEON_ID, CANIVORE_BUS_NAME);
   private final SwerveModule[] swerveModules;
   private final Field2d field2d = new Field2d();
+  private final Thread photonThread = new Thread(new PhotonRunnable(APRILTAG_CAMERA_NAME, this::addVisionMeasurement));
   private final OdometryThread odometryThread;
   private final ReadWriteLock odometryLock = new ReentrantReadWriteLock();
 
@@ -175,8 +179,8 @@ public class DrivetrainSubsystem extends SubsystemBase {
         )};
 
       new Trigger(RobotState::isEnabled)
-           .onTrue(runOnce(() -> setBrakeMode(true)))
-           .onFalse(runOnce(() -> setBrakeMode(false)).ignoringDisable(true));
+           .onTrue(Commands.runOnce(() -> setBrakeMode(true)))
+           .onFalse(Commands.runOnce(() -> setBrakeMode(false)).ignoringDisable(true));
   
       poseEstimator =  new SwerveDrivePoseEstimator(
           KINEMATICS,
@@ -188,7 +192,10 @@ public class DrivetrainSubsystem extends SubsystemBase {
       odometryThread.setName("Drivetrain Odometry");
       odometryThread.setDaemon(true);
       odometryThread.start();
-        
+      
+      // Start PhotonVision thread
+      photonThread.setName("PhotonVision");
+      photonThread.start();
   }
 
   public void addDashboardWidgets(ShuffleboardTab tab) {
