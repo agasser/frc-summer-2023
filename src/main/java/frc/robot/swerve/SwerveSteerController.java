@@ -3,6 +3,7 @@ package frc.robot.swerve;
 import static com.ctre.phoenix6.signals.InvertedValue.Clockwise_Positive;
 import static com.ctre.phoenix6.signals.InvertedValue.CounterClockwise_Positive;
 import static edu.wpi.first.math.util.Units.rotationsToRadians;
+import static edu.wpi.first.units.Units.Rotations;
 import static frc.robot.Constants.DrivetrainConstants.CANIVORE_BUS_NAME;
 import static frc.robot.Constants.DrivetrainConstants.MAX_STEER_ROTATIONS_PER_SECOND;
 import static frc.robot.Constants.DrivetrainConstants.STEER_kD;
@@ -23,7 +24,8 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
 
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.util.Units;
+import edu.wpi.first.units.Angle;
+import edu.wpi.first.units.Measure;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardContainer;
 
 public class SwerveSteerController {
@@ -38,7 +40,7 @@ public class SwerveSteerController {
   public SwerveSteerController(
       int motorPort,
       int canCoderPort,
-      double canCoderOffset,
+      Measure<Angle> canCoderOffset,
       ShuffleboardContainer container, 
       ModuleConfiguration moduleConfiguration) {
 
@@ -46,7 +48,7 @@ public class SwerveSteerController {
     var cancoderConfig = new CANcoderConfiguration();
     var magSensorConfig = cancoderConfig.MagnetSensor;
     magSensorConfig.AbsoluteSensorRange = AbsoluteSensorRangeValue.Signed_PlusMinusHalf;
-    magSensorConfig.MagnetOffset = Units.radiansToRotations(canCoderOffset);
+    magSensorConfig.MagnetOffset = canCoderOffset.in(Rotations);
     magSensorConfig.SensorDirection = SensorDirectionValue.CounterClockwise_Positive;
 
     encoder = new CANcoder(canCoderPort, CANIVORE_BUS_NAME);

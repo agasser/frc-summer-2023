@@ -1,5 +1,8 @@
 package frc.robot;
 
+import static edu.wpi.first.units.Units.Meters;
+import static edu.wpi.first.units.Units.MetersPerSecond;
+
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -33,9 +36,9 @@ public class AutonomousBuilder {
             new PIDConstants(AutoDriveConstants.TRANSLATION_kP, AutoDriveConstants.TRANSLATION_kI,
                 AutoDriveConstants.TRANSLATION_kD),
             new PIDConstants(AutoDriveConstants.THETA_kP, AutoDriveConstants.THETA_kI, AutoDriveConstants.THETA_kD),
-            DrivetrainConstants.MAX_VELOCITY_METERS_PER_SECOND,
-            new Translation2d(DrivetrainConstants.DRIVETRAIN_WHEELBASE_METERS / 2.0,
-                DrivetrainConstants.DRIVETRAIN_TRACKWIDTH_METERS / 2.0).getNorm(),
+            DrivetrainConstants.MAX_VELOCITY.in(MetersPerSecond),
+            new Translation2d(DrivetrainConstants.WHEELBASE.in(Meters) / 2.0,
+                DrivetrainConstants.TRACKWIDTH.in(Meters) / 2.0).getNorm(),
             new ReplanningConfig()),
         drivetrainSubsystem);
 

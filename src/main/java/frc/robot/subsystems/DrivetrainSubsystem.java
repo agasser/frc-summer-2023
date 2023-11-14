@@ -6,6 +6,7 @@ package frc.robot.subsystems;
 
 import static edu.wpi.first.apriltag.AprilTagFieldLayout.OriginPosition.kBlueAllianceWallRightSide;
 import static edu.wpi.first.apriltag.AprilTagFieldLayout.OriginPosition.kRedAllianceWallRightSide;
+import static edu.wpi.first.units.Units.MetersPerSecond;
 import static frc.robot.Constants.DrivetrainConstants.BACK_LEFT_MODULE_DRIVE_MOTOR;
 import static frc.robot.Constants.DrivetrainConstants.BACK_LEFT_MODULE_STEER_ENCODER;
 import static frc.robot.Constants.DrivetrainConstants.BACK_LEFT_MODULE_STEER_MOTOR;
@@ -24,6 +25,7 @@ import static frc.robot.Constants.DrivetrainConstants.FRONT_RIGHT_MODULE_STEER_E
 import static frc.robot.Constants.DrivetrainConstants.FRONT_RIGHT_MODULE_STEER_MOTOR;
 import static frc.robot.Constants.DrivetrainConstants.FRONT_RIGHT_MODULE_STEER_OFFSET;
 import static frc.robot.Constants.DrivetrainConstants.KINEMATICS;
+import static frc.robot.Constants.DrivetrainConstants.MAX_VELOCITY;
 import static frc.robot.Constants.DrivetrainConstants.PIGEON_ID;
 import static frc.robot.Constants.VisionConstants.APRILTAG_CAMERA_NAME;
 
@@ -46,6 +48,8 @@ import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.units.Angle;
+import edu.wpi.first.units.Measure;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.RobotState;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
@@ -274,7 +278,7 @@ public class DrivetrainSubsystem extends SubsystemBase {
       int driveMotorPort,
       int steerMotorPort,
       int steerEncoderPort,
-      double steerOffset) {
+      Measure<Angle> steerOffset) {
 
     return new SwerveModule(
         new SwerveSpeedController(driveMotorPort, moduleConfiguration, container), 
@@ -429,7 +433,7 @@ public class DrivetrainSubsystem extends SubsystemBase {
    */
   public void setModuleStates(SwerveModuleState[] states) {
     double[] moduleSetpointArray = new double[states.length * 2];
-    SwerveDriveKinematics.desaturateWheelSpeeds(states, DrivetrainConstants.MAX_VELOCITY_METERS_PER_SECOND);
+    SwerveDriveKinematics.desaturateWheelSpeeds(states, MAX_VELOCITY.in(MetersPerSecond));
     IntStream.range(0, swerveModules.length).forEach(i -> {
       var swerveModule = swerveModules[i];
       var desiredState = SwerveModuleState.optimize(states[i], swerveModule.getSteerAngle(false));

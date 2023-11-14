@@ -1,16 +1,21 @@
 package frc.robot.commands;
 
+import static edu.wpi.first.units.Units.MetersPerSecond;
+import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static frc.robot.Constants.TeleopDriveConstants.ROTATION_RATE_LIMIT;
 import static frc.robot.Constants.TeleopDriveConstants.X_RATE_LIMIT;
 import static frc.robot.Constants.TeleopDriveConstants.Y_RATE_LIMIT;
 
-import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.units.Angle;
+import edu.wpi.first.units.Distance;
+import edu.wpi.first.units.Measure;
+import edu.wpi.first.units.Velocity;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.DrivetrainSubsystem;
 
@@ -23,9 +28,9 @@ import frc.robot.subsystems.DrivetrainSubsystem;
 public class FieldOrientedDriveCommand extends Command {
   private final DrivetrainSubsystem drivetrainSubsystem;
   private final Supplier<Rotation2d> robotAngleSupplier;
-  private final DoubleSupplier translationXSupplier;
-  private final DoubleSupplier translationYSupplier;
-  private final DoubleSupplier rotationSupplier;
+  private final Supplier<Measure<Velocity<Distance>>> translationXSupplier;
+  private final Supplier<Measure<Velocity<Distance>>> translationYSupplier;
+  private final Supplier<Measure<Velocity<Angle>>> rotationSupplier;
 
   private final SlewRateLimiter translateXRateLimiter = new SlewRateLimiter(X_RATE_LIMIT);
   private final SlewRateLimiter translateYRateLimiter = new SlewRateLimiter(Y_RATE_LIMIT);
@@ -42,9 +47,9 @@ public class FieldOrientedDriveCommand extends Command {
   public FieldOrientedDriveCommand(
       DrivetrainSubsystem drivetrainSubsystem,
       Supplier<Rotation2d> robotAngleSupplier,
-      DoubleSupplier translationXSupplier,
-      DoubleSupplier translationYSupplier,
-      DoubleSupplier rotationSupplier) {
+      Supplier<Measure<Velocity<Distance>>> translationXSupplier,
+      Supplier<Measure<Velocity<Distance>>> translationYSupplier,
+      Supplier<Measure<Velocity<Angle>>> rotationSupplier) {
     this.drivetrainSubsystem = drivetrainSubsystem;
     this.robotAngleSupplier = robotAngleSupplier;
     this.translationXSupplier = translationXSupplier;
@@ -74,9 +79,9 @@ public class FieldOrientedDriveCommand extends Command {
   public void execute() {
     drivetrainSubsystem.drive(
         ChassisSpeeds.fromFieldRelativeSpeeds(
-            translateXRateLimiter.calculate(translationXSupplier.getAsDouble()),
-            translateYRateLimiter.calculate(translationYSupplier.getAsDouble()),
-            rotationRateLimiter.calculate(rotationSupplier.getAsDouble()),
+            translateXRateLimiter.calculate(translationXSupplier.get().in(MetersPerSecond)),
+            translateYRateLimiter.calculate(translationYSupplier.get().in(MetersPerSecond)),
+            rotationRateLimiter.calculate(rotationSupplier.get().in(RadiansPerSecond)),
             robotAngleSupplier.get()));
   }
 

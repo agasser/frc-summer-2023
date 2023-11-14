@@ -1,13 +1,17 @@
 package frc.robot.controls;
 
-import static frc.robot.Constants.DrivetrainConstants.MAX_ANGULAR_VELOCITY_RADIANS_PER_SECOND;
-import static frc.robot.Constants.DrivetrainConstants.MAX_VELOCITY_METERS_PER_SECOND;
+import static frc.robot.Constants.DrivetrainConstants.MAX_ANGULAR_VELOCITY;
+import static frc.robot.Constants.DrivetrainConstants.MAX_VELOCITY;
 import static frc.robot.Constants.TeleopDriveConstants.XBOX_CONTROLLER_DEADBAND;
 
 import java.util.Optional;
-import java.util.function.DoubleSupplier;
+import java.util.function.Supplier;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.units.Angle;
+import edu.wpi.first.units.Distance;
+import edu.wpi.first.units.Measure;
+import edu.wpi.first.units.Velocity;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 
@@ -26,17 +30,18 @@ public class XBoxControlBindings implements ControlBindings {
   }
 
   @Override
-  public DoubleSupplier translationX() {
-    return () ->-modifyAxis(driverController.getLeftY()) * MAX_VELOCITY_METERS_PER_SECOND;
-  }
-  @Override
-  public DoubleSupplier translationY() {
-    return () -> -modifyAxis(driverController.getLeftX()) * MAX_VELOCITY_METERS_PER_SECOND;
+  public Supplier<Measure<Velocity<Distance>>> translationX() {
+    return () -> MAX_VELOCITY.times(-modifyAxis(driverController.getLeftY()));
   }
   
   @Override
-  public DoubleSupplier omega() {
-    return () -> -modifyAxis(driverController.getRightX()) * MAX_ANGULAR_VELOCITY_RADIANS_PER_SECOND / 2;
+  public Supplier<Measure<Velocity<Distance>>> translationY() {
+    return () -> MAX_VELOCITY.times(-modifyAxis(driverController.getLeftX()));
+  }
+  
+  @Override
+  public Supplier<Measure<Velocity<Angle>>> omega() {
+    return () -> MAX_ANGULAR_VELOCITY.times(-modifyAxis(driverController.getRightX() / 2.0));
   }
   
   private static double modifyAxis(double value) {

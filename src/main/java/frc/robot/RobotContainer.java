@@ -4,6 +4,8 @@
 
 package frc.robot;
 
+import static edu.wpi.first.units.Units.MetersPerSecond;
+import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.wpilibj2.command.Commands.run;
 import static edu.wpi.first.wpilibj2.command.Commands.runOnce;
 
@@ -83,9 +85,9 @@ public class RobotContainer {
     // POV Right to put the wheels in an X until the driver tries to drive
     controlBindings.wheelsToX()
         .ifPresent(trigger -> trigger.onTrue(run(drivetrainSubsystem::setWheelsToX, drivetrainSubsystem)
-            .until(() -> controlBindings.translationX().getAsDouble() != 0
-                || controlBindings.translationY().getAsDouble() != 0
-                || controlBindings.omega().getAsDouble() != 0 )));
+            .until(() -> controlBindings.translationX().get().in(MetersPerSecond) != 0
+                || controlBindings.translationY().get().in(MetersPerSecond) != 0
+                || controlBindings.omega().get().in(RadiansPerSecond) != 0)));
 
   }
 

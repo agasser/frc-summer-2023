@@ -1,13 +1,15 @@
 package frc.robot.commands.autonomous;
 
+import static edu.wpi.first.units.Units.MetersPerSecond;
+import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static frc.robot.Constants.AutoDriveConstants.THETA_kD;
 import static frc.robot.Constants.AutoDriveConstants.THETA_kI;
 import static frc.robot.Constants.AutoDriveConstants.THETA_kP;
 import static frc.robot.Constants.AutoDriveConstants.TRANSLATION_kD;
 import static frc.robot.Constants.AutoDriveConstants.TRANSLATION_kI;
 import static frc.robot.Constants.AutoDriveConstants.TRANSLATION_kP;
-import static frc.robot.Constants.DrivetrainConstants.MAX_ANGULAR_VELOCITY_RADIANS_PER_SECOND;
-import static frc.robot.Constants.DrivetrainConstants.MAX_VELOCITY_METERS_PER_SECOND;
+import static frc.robot.Constants.DrivetrainConstants.MAX_ANGULAR_VELOCITY;
+import static frc.robot.Constants.DrivetrainConstants.MAX_VELOCITY;
 import static frc.robot.Constants.VisionConstants.FIELD_WIDTH_METERS;
 
 import java.util.function.Supplier;
@@ -32,11 +34,12 @@ public class DriveToPoseCommand extends Command {
   private static final double THETA_TOLERANCE = Units.degreesToRadians(2.0);
   
   private static final TrapezoidProfile.Constraints DEFAULT_XY_CONSTRAINTS = new TrapezoidProfile.Constraints(
-      MAX_VELOCITY_METERS_PER_SECOND * 0.5,
-      MAX_VELOCITY_METERS_PER_SECOND);
+      MAX_VELOCITY.in(MetersPerSecond) * 0.5,
+      MAX_VELOCITY.in(MetersPerSecond));
+
   private static final TrapezoidProfile.Constraints DEFAULT_OMEGA_CONSTRAINTS = new TrapezoidProfile.Constraints(
-      MAX_ANGULAR_VELOCITY_RADIANS_PER_SECOND * 0.4,
-      MAX_ANGULAR_VELOCITY_RADIANS_PER_SECOND);
+      MAX_ANGULAR_VELOCITY.in(RadiansPerSecond) * 0.4,
+      MAX_ANGULAR_VELOCITY.in(RadiansPerSecond));
 
   private final ProfiledPIDController xController;
   private final ProfiledPIDController yController;

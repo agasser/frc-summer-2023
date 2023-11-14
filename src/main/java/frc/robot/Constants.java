@@ -5,7 +5,11 @@
 package frc.robot;
 
 import static edu.wpi.first.math.util.Units.degreesToRadians;
-import static edu.wpi.first.math.util.Units.inchesToMeters;
+import static edu.wpi.first.units.Units.Inches;
+import static edu.wpi.first.units.Units.Meters;
+import static edu.wpi.first.units.Units.MetersPerSecond;
+import static edu.wpi.first.units.Units.Radians;
+import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static java.lang.Math.PI;
 
 import edu.wpi.first.math.geometry.Pose2d;
@@ -16,6 +20,10 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
+import edu.wpi.first.units.Angle;
+import edu.wpi.first.units.Distance;
+import edu.wpi.first.units.Measure;
+import edu.wpi.first.units.Velocity;
 import frc.robot.swerve.ModuleConfiguration;
 
 /**
@@ -41,35 +49,35 @@ public final class Constants {
      *
      * Should be measured from center to center.
      */
-    public static final double DRIVETRAIN_TRACKWIDTH_METERS = inchesToMeters(18.75);
+    public static final Measure<Distance> TRACKWIDTH = Inches.of(18.75);
     /**
      * The front-to-back distance between the drivetrain wheels.
      *
      * Should be measured from center to center.
      */
-    public static final double DRIVETRAIN_WHEELBASE_METERS = inchesToMeters(18.75);
+    public static final Measure<Distance> WHEELBASE = Inches.of(18.75);
 
     public static final String CANIVORE_BUS_NAME = "swerve";
 
     public static final int FRONT_LEFT_MODULE_DRIVE_MOTOR = 0;
     public static final int FRONT_LEFT_MODULE_STEER_MOTOR = 10;
     public static final int FRONT_LEFT_MODULE_STEER_ENCODER = 20;
-    public static final double FRONT_LEFT_MODULE_STEER_OFFSET = 1.2241166687327416;
+    public static final Measure<Angle> FRONT_LEFT_MODULE_STEER_OFFSET = Radians.of(1.2241166687327416);
 
     public static final int FRONT_RIGHT_MODULE_DRIVE_MOTOR = 1;
     public static final int FRONT_RIGHT_MODULE_STEER_MOTOR = 11;
     public static final int FRONT_RIGHT_MODULE_STEER_ENCODER = 21;
-    public static final double FRONT_RIGHT_MODULE_STEER_OFFSET = -1.0154952815802945;
+    public static final Measure<Angle> FRONT_RIGHT_MODULE_STEER_OFFSET = Radians.of(-1.0154952815802945);
 
     public static final int BACK_LEFT_MODULE_DRIVE_MOTOR = 2;
     public static final int BACK_LEFT_MODULE_STEER_MOTOR = 12;
     public static final int BACK_LEFT_MODULE_STEER_ENCODER = 22;
-    public static final double BACK_LEFT_MODULE_STEER_OFFSET = 2.696738225102957;
+    public static final Measure<Angle> BACK_LEFT_MODULE_STEER_OFFSET = Radians.of(2.696738225102957);
 
     public static final int BACK_RIGHT_MODULE_DRIVE_MOTOR = 3;
     public static final int BACK_RIGHT_MODULE_STEER_MOTOR = 13;
     public static final int BACK_RIGHT_MODULE_STEER_ENCODER = 23;
-    public static final double BACK_RIGHT_MODULE_STEER_OFFSET = 1.1765632643082868;
+    public static final Measure<Angle> BACK_RIGHT_MODULE_STEER_OFFSET = Radians.of(1.1765632643082868);
     
     public static final int PIGEON_ID = 30;
 
@@ -78,9 +86,9 @@ public final class Constants {
      * <p>
      * This is a measure of how fast the robot should be able to drive in a straight line.
      */
-    public static final double MAX_VELOCITY_METERS_PER_SECOND = 6380.0 / 60.0 *
+    public static final Measure<Velocity<Distance>> MAX_VELOCITY = MetersPerSecond.of(6380.0 / 60.0 *
         ModuleConfiguration.MK4I_L2.getDriveReduction() *
-        ModuleConfiguration.MK4I_L2.getWheelDiameter() * PI;
+        ModuleConfiguration.MK4I_L2.getWheelDiameter() * PI);
     
     public static final double MAX_STEER_ROTATIONS_PER_SECOND = 6380.0 / 60.0 *
         ModuleConfiguration.MK4I_L2.getSteerReduction();
@@ -91,19 +99,19 @@ public final class Constants {
      * This is a measure of how fast the robot can rotate in place.
      */
     // Here we calculate the theoretical maximum angular velocity. You can also replace this with a measured amount.
-    public static final double MAX_ANGULAR_VELOCITY_RADIANS_PER_SECOND = 
-        (DrivetrainConstants.MAX_VELOCITY_METERS_PER_SECOND /
-        Math.hypot(DRIVETRAIN_TRACKWIDTH_METERS / 2.0, DRIVETRAIN_WHEELBASE_METERS / 2.0));
+    public static final Measure<Velocity<Angle>> MAX_ANGULAR_VELOCITY = RadiansPerSecond.of(
+        DrivetrainConstants.MAX_VELOCITY.in(MetersPerSecond) /
+        Math.hypot(TRACKWIDTH.in(Meters) / 2.0, WHEELBASE.in(Meters) / 2.0));
 
     public static final SwerveDriveKinematics KINEMATICS = new SwerveDriveKinematics(
         // Front left
-        new Translation2d(DRIVETRAIN_WHEELBASE_METERS / 2.0, DRIVETRAIN_TRACKWIDTH_METERS / 2.0),
+        new Translation2d(WHEELBASE.in(Meters) / 2.0, TRACKWIDTH.in(Meters) / 2.0),
         // Front right
-        new Translation2d(DRIVETRAIN_WHEELBASE_METERS / 2.0, -DRIVETRAIN_TRACKWIDTH_METERS / 2.0),
+        new Translation2d(WHEELBASE.in(Meters) / 2.0, -TRACKWIDTH.in(Meters) / 2.0),
         // Back left
-        new Translation2d(-DRIVETRAIN_WHEELBASE_METERS / 2.0, DRIVETRAIN_TRACKWIDTH_METERS / 2.0),
+        new Translation2d(-WHEELBASE.in(Meters) / 2.0, TRACKWIDTH.in(Meters) / 2.0),
         // Back right
-        new Translation2d(-DRIVETRAIN_WHEELBASE_METERS / 2.0, -DRIVETRAIN_TRACKWIDTH_METERS / 2.0)
+        new Translation2d(-WHEELBASE.in(Meters) / 2.0, -TRACKWIDTH.in(Meters) / 2.0)
     );
 
     public static final double STEER_kP = 30.0;
