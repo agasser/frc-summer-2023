@@ -13,6 +13,7 @@ import com.pathplanner.lib.util.ReplanningConfig;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -40,6 +41,7 @@ public class AutonomousBuilder {
             new Translation2d(DrivetrainConstants.WHEELBASE.in(Meters) / 2.0,
                 DrivetrainConstants.TRACKWIDTH.in(Meters) / 2.0).getNorm(),
             new ReplanningConfig()),
+        () -> DriverStation.getAlliance().map(alliance -> alliance == DriverStation.Alliance.Red).orElse(false),
         drivetrainSubsystem);
 
     autoChooser = AutoBuilder.buildAutoChooser();

@@ -36,6 +36,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.IntStream;
 
 import com.ctre.phoenix6.BaseStatusSignal;
+import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.hardware.Pigeon2;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout.OriginPosition;
@@ -73,6 +74,8 @@ public class DrivetrainSubsystem extends SubsystemBase {
   private static final NetworkTable moduleStatesTable = NetworkTableInstance.getDefault().getTable("SwerveStates");
   private final SwerveDrivePoseEstimator poseEstimator;
   private final Pigeon2 pigeon = new Pigeon2(PIGEON_ID, CANIVORE_BUS_NAME);
+  private final StatusSignal<Double> yawSignal;
+  private final StatusSignal<Double> angularZSignal;
   private final SwerveModule[] swerveModules;
   private final Field2d field2d = new Field2d();
   private final Thread photonThread = new Thread(new PhotonRunnable(APRILTAG_CAMERA_NAME, this::addVisionMeasurement));
@@ -85,18 +88,10 @@ public class DrivetrainSubsystem extends SubsystemBase {
   private ChassisSpeeds desiredChassisSpeeds;
 
   private class OdometryThread extends Thread {
-    private final BaseStatusSignal[] statusSignals = new BaseStatusSignal[swerveModules.length * 4 + 2];
+    private final BaseStatusSignal[] statusSignals;
 
-    public OdometryThread() {
-      for (int i = 0; i < swerveModules.length; i++) {
-        var moduleSignals = swerveModules[i].getSignals();
-        statusSignals[(i * 4) + 0] = moduleSignals[0];
-        statusSignals[(i * 4) + 1] = moduleSignals[1];
-        statusSignals[(i * 4) + 2] = moduleSignals[2];
-        statusSignals[(i * 4) + 3] = moduleSignals[3];
-      }
-      statusSignals[statusSignals.length - 2] = pigeon.getYaw().clone();
-      statusSignals[statusSignals.length - 1] = pigeon.getAccelerationZ().clone();
+    public OdometryThread(BaseStatusSignal[] statusSignals) {
+      this.statusSignals = statusSignals;
     }
 
     @Override
@@ -185,15 +180,29 @@ public class DrivetrainSubsystem extends SubsystemBase {
       new Trigger(RobotState::isEnabled)
            .onTrue(Commands.runOnce(() -> setBrakeMode(true)))
            .onFalse(Commands.runOnce(() -> setBrakeMode(false)).ignoringDisable(true));
-  
+
+      var statusSignals = new BaseStatusSignal[swerveModules.length * 4 + 2];
+      for (int i = 0; i < swerveModules.length; i++) {
+        var moduleSignals = swerveModules[i].getSignals();
+        statusSignals[(i * 4) + 0] = moduleSignals[0];
+        statusSignals[(i * 4) + 1] = moduleSignals[1];
+        statusSignals[(i * 4) + 2] = moduleSignals[2];
+        statusSignals[(i * 4) + 3] = moduleSignals[3];
+      }
+      yawSignal = pigeon.getYaw().clone();
+      angularZSignal = pigeon.getAccelerationZ().clone();
+      statusSignals[statusSignals.length - 2] = yawSignal;
+      statusSignals[statusSignals.length - 1] = angularZSignal;
+      
       poseEstimator =  new SwerveDrivePoseEstimator(
           KINEMATICS,
           getGyroscopeRotation(),
           getModulePositions(),
           new Pose2d());
-      
-      odometryThread = new OdometryThread();
+
+      odometryThread = new OdometryThread(statusSignals);
       odometryThread.setName("Drivetrain Odometry");
+      odometryThread.setPriority(1); // CTRE says testing shows this is a good starting priority
       odometryThread.setDaemon(true);
       odometryThread.start();
       
@@ -286,8 +295,7 @@ public class DrivetrainSubsystem extends SubsystemBase {
   }
 
   private Rotation2d getGyroscopeRotation() {
-    return Rotation2d.fromDegrees(
-        BaseStatusSignal.getLatencyCompensatedValue(pigeon.getYaw(), pigeon.getAngularVelocityZ()));
+    return Rotation2d.fromDegrees(BaseStatusSignal.getLatencyCompensatedValue(yawSignal, angularZSignal));
   }
 
   /**
